@@ -32,6 +32,48 @@ logger = setup_logger(__name__)
 
 
 @dataclass
+class ArchSpace:
+    """
+    Configuration for the architecture search space.
+
+    Attributes:
+        dimensions: Size of architecture vectors
+        bounds: Valid ranges for continuous parameters
+        categorical_dims: Valid values for categorical parameters
+    """
+
+    dimensions: int = 64
+    bounds: Dict[str, Tuple[float, float]] = None
+    categorical_dims: Dict[str, List[str]] = None
+
+    def __post_init__(self):
+        """Initialize default bounds and categorical dimensions if not provided."""
+        if self.bounds is None:
+            self.bounds = {
+                "num_layers": (2, 12),
+                "hidden_size": (128, 1024),
+                "num_heads": (4, 16),
+                "ffn_ratio": (2.0, 8.0),
+            }
+
+        if self.categorical_dims is None:
+            self.categorical_dims = {
+                "ffn_type": ["vanilla", "gated", "expert"],
+                "attention_type": ["vanilla", "linear", "sparse"],
+                "norm_type": ["layer", "rmsnorm"],
+                "activation": ["relu", "gelu", "swish"],
+            }
+
+    def create_vector(self) -> "ArchitectureVector":
+        """Create a new architecture vector with this space's configuration."""
+        return ArchitectureVector(
+            dimensions=self.dimensions,
+            bounds=self.bounds,
+            categorical_dims=self.categorical_dims,
+        )
+
+
+@dataclass
 class ArchitectureSpec:
     """
     Structured representation of an architecture specification.

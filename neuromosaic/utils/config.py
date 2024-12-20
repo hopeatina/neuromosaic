@@ -21,14 +21,44 @@ import os
 import yaml
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
+from ..arch_space.vector_representation import ArchSpace
+from ..orchestrator.strategies.random_strategy import RandomSearch
+from ..orchestrator.strategies.bayesopt_strategy import BayesianOptimization
 from .exceptions import ConfigurationError
 
 # Load environment variables from .env file
 load_dotenv()
+
+
+@dataclass
+class Training:
+    """Configuration for model training."""
+
+    batch_size: int = field(default=32)
+    max_epochs: int = field(default=10)
+    learning_rate: float = field(default=0.001)
+    optimizer: str = field(default="adam")
+    scheduler: str = field(default="cosine")
+    metrics: List[str] = field(
+        default_factory=lambda: ["accuracy", "loss", "latency", "memory_usage"]
+    )
+
+    def __post_init__(self):
+        """Validate training configuration."""
+        if self.batch_size <= 0:
+            raise ConfigurationError(f"Invalid batch size: {self.batch_size}")
+        if self.max_epochs <= 0:
+            raise ConfigurationError(f"Invalid max epochs: {self.max_epochs}")
+        if self.learning_rate <= 0:
+            raise ConfigurationError(f"Invalid learning rate: {self.learning_rate}")
+        if self.optimizer not in ["adam", "sgd", "adamw"]:
+            raise ConfigurationError(f"Invalid optimizer: {self.optimizer}")
+        if self.scheduler not in ["cosine", "linear", "step", "none"]:
+            raise ConfigurationError(f"Invalid scheduler: {self.scheduler}")
 
 
 @dataclass
@@ -91,22 +121,31 @@ class DatabaseConfig:
 
 @dataclass
 class ContainerConfig:
-    """Configuration for container execution."""
+    """Configuration for container runtime."""
 
-    registry: Optional[str] = field(default=None)
-    cpu_limit: int = field(default=4)
-    memory_limit: str = field(default="8G")
-    gpu_limit: int = field(default=1)
+    device: str = field(default="cpu")
+    memory_limit: str = field(default="8GB")
+    num_cpus: int = field(default=4)
 
     @classmethod
     def from_env(cls) -> "ContainerConfig":
         """Create config from environment variables."""
         return cls(
-            registry=os.getenv("DOCKER_REGISTRY"),
-            cpu_limit=int(os.getenv("CONTAINER_CPU_LIMIT", "4")),
-            memory_limit=os.getenv("CONTAINER_MEMORY_LIMIT", "8G"),
-            gpu_limit=int(os.getenv("CONTAINER_GPU_LIMIT", "1")),
+            device=os.getenv("CONTAINER_DEVICE", "cpu"),
+            memory_limit=os.getenv("CONTAINER_MEMORY_LIMIT", "8GB"),
+            num_cpus=int(os.getenv("CONTAINER_NUM_CPUS", "4")),
         )
+
+    def __post_init__(self):
+        """Validate container configuration."""
+        if self.device not in ["cpu", "gpu"]:
+            raise ConfigurationError(f"Invalid device: {self.device}")
+        if self.num_cpus <= 0:
+            raise ConfigurationError(f"Invalid number of CPUs: {self.num_cpus}")
+        try:
+            parse_size(self.memory_limit)
+        except ValueError:
+            raise ConfigurationError(f"Invalid memory limit: {self.memory_limit}")
 
 
 @dataclass
@@ -159,6 +198,21 @@ class Config:
     security: SecurityConfig = field(default_factory=SecurityConfig)
     debug: bool = field(default=False)
     environment: str = field(default="production")
+    arch_space: ArchSpace = field(default_factory=ArchSpace)
+    search_strategy: Union[RandomSearch, BayesianOptimization] = field(
+        default_factory=lambda: BayesianOptimization(
+            {
+                "dimensions": 64,
+                "num_trials": 10,
+                "type": "bayesian_optimization",
+                "kernel": "matern",
+                "length_scale": 1.0,
+                "acquisition_function": "expected_improvement",
+                "exploration_weight": 0.1,
+            }
+        )
+    )
+    training: Training = field(default_factory=Training)
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -172,26 +226,125 @@ class Config:
             security=SecurityConfig.from_env(),
             debug=os.getenv("DEBUG", "false").lower() == "true",
             environment=os.getenv("ENVIRONMENT", "production"),
+            arch_space=ArchSpace(),
+            search_strategy=BayesianOptimization(
+                {
+                    "dimensions": 64,
+                    "num_trials": 10,
+                    "type": "bayesian_optimization",
+                    "kernel": "matern",
+                    "length_scale": 1.0,
+                    "acquisition_function": "expected_improvement",
+                    "exploration_weight": 0.1,
+                }
+            ),
+            training=Training(),
         )
+
+    def load_config(self, config_path: Union[str, Path]) -> None:
+        """
+        Load configuration from a YAML file and merge with current config.
+
+        Args:
+            config_path: Path to YAML configuration file
+
+        Raises:
+            ConfigurationError: If configuration file is invalid or cannot be loaded
+        """
+        try:
+            yaml_config = load_yaml_config(config_path)
+
+            # Update each config section if present in YAML
+            if "llm" in yaml_config:
+                self.llm = LLMConfig(**yaml_config["llm"])
+            if "storage" in yaml_config:
+                self.storage = StorageConfig(**yaml_config["storage"])
+            if "database" in yaml_config:
+                self.database = DatabaseConfig(**yaml_config["database"])
+            if "container" in yaml_config:
+                self.container = ContainerConfig(**yaml_config["container"])
+            if "monitoring" in yaml_config:
+                self.monitoring = MonitoringConfig(**yaml_config["monitoring"])
+            if "security" in yaml_config:
+                self.security = SecurityConfig(**yaml_config["security"])
+            if "arch_space" in yaml_config:
+                self.arch_space = ArchSpace(**yaml_config["arch_space"])
+            if "search_strategy" in yaml_config:
+                strategy_config = yaml_config["search_strategy"]
+                strategy_type = strategy_config.get("type", "bayesian_optimization")
+                # Ensure dimensions is set
+                if "dimensions" not in strategy_config:
+                    strategy_config["dimensions"] = 64
+
+                # Add default values for bayesian optimization
+                if strategy_type == "bayesian_optimization":
+                    defaults = {
+                        "kernel": "matern",
+                        "length_scale": 1.0,
+                        "acquisition_function": "expected_improvement",
+                        "exploration_weight": 0.1,
+                    }
+                    for key, value in defaults.items():
+                        if key not in strategy_config:
+                            strategy_config[key] = value
+
+                if strategy_type == "random":
+                    self.search_strategy = RandomSearch(strategy_config)
+                elif strategy_type == "bayesian_optimization":
+                    self.search_strategy = BayesianOptimization(strategy_config)
+                else:
+                    raise ConfigurationError(
+                        f"Unsupported search strategy type: {strategy_type}"
+                    )
+            if "training" in yaml_config:
+                self.training = Training(**yaml_config["training"])
+
+            # Update simple fields
+            self.debug = yaml_config.get("debug", self.debug)
+            self.environment = yaml_config.get("environment", self.environment)
+
+            # Validate the final configuration
+            validate_config(self)
+
+        except Exception as e:
+            raise ConfigurationError(f"Failed to load configuration: {e}")
 
 
 def parse_size(size_str: str) -> int:
-    """Parse size string (e.g., '50GB') to bytes."""
-    units = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3, "TB": 1024**4}
+    """Parse size string (e.g., '50GB' or '50G') to bytes."""
+    # Support both full units and single letter units
+    units = {
+        "TB": 1024**4,
+        "T": 1024**4,
+        "GB": 1024**3,
+        "G": 1024**3,
+        "MB": 1024**2,
+        "M": 1024**2,
+        "KB": 1024,
+        "K": 1024,
+        "B": 1,
+    }
 
     size_str = size_str.strip().upper()
+
+    # Try to find the unit by checking each unit in order (longest first)
     for unit, multiplier in units.items():
         if size_str.endswith(unit):
             try:
-                number = float(size_str[: -len(unit)])
+                # Extract the number part by removing the unit
+                number_str = size_str[: -len(unit)].strip()
+                number = float(number_str)
                 return int(number * multiplier)
             except ValueError:
-                raise ConfigurationError(f"Invalid size format: {size_str}")
+                continue
 
+    # If no unit is found or parsing failed, try to parse as raw bytes
     try:
         return int(size_str)
     except ValueError:
-        raise ConfigurationError(f"Invalid size format: {size_str}")
+        raise ConfigurationError(
+            f"Invalid size format: {size_str}. Expected format: NUMBER[T|TB|G|GB|M|MB|K|KB|B]"
+        )
 
 
 def load_yaml_config(path: Union[str, Path]) -> Dict[str, Any]:
@@ -247,6 +400,22 @@ def validate_config(config: Config) -> None:
             f"Invalid log level: {config.monitoring.log_level}. "
             f"Must be one of {valid_log_levels}"
         )
+
+    # Validate arch_space configuration
+    if not isinstance(config.arch_space, ArchSpace):
+        raise ConfigurationError("Invalid arch_space configuration")
+
+    # Validate search_strategy configuration
+    if not isinstance(config.search_strategy, (RandomSearch, BayesianOptimization)):
+        raise ConfigurationError("Invalid search_strategy configuration")
+
+    # Validate training configuration
+    if not isinstance(config.training, Training):
+        raise ConfigurationError("Invalid training configuration")
+    try:
+        config.training.__post_init__()
+    except ConfigurationError as e:
+        raise ConfigurationError(f"Training configuration validation failed: {e}")
 
 
 def load_config(config_path: Optional[Union[str, Path]] = None) -> Config:

@@ -55,51 +55,94 @@ This project follows a standard code of conduct. Please be respectful and profes
 
 ## Running Experiments
 
-1. Configure your experiment:
+Neuromosaic provides three main workflows for running and analyzing architecture searches:
 
-   - Create a new configuration file in `configs/` or modify existing ones
-   - Set hyperparameters, model architecture, and dataset options
-   - Specify logging and checkpoint directories
+### 1. Quick Start (Main Workflow)
 
-2. Prepare your data:
+For a quick start with sensible defaults:
 
-   ```bash
-   python scripts/prepare_data.py --config configs/your_config.yaml
+```bash
+# Start a basic architecture search
+python -m neuromosaic quickstart
+
+# Customize output directory and hardware
+python -m neuromosaic quickstart --output-dir my_search --cpu
+```
+
+This will:
+
+- Create an output directory with a default configuration
+- Run architecture search with proven defaults
+- Generate basic visualizations
+- Show a summary of the best results
+
+### 2. Custom Experimentation
+
+For more control over the search process:
+
+1. Create a custom configuration file (e.g., `custom_config.yaml`):
+
+   ```yaml
+   arch_space:
+     dimensions: 64
+     bounds:
+       num_layers: [2, 8]
+       hidden_size: [128, 512]
+
+   search_strategy:
+     type: "bayesian_optimization"
+     num_trials: 10
+
+   training:
+     batch_size: 32
+     max_epochs: 5
    ```
 
-3. Run training:
+2. Run the experiment:
 
    ```bash
-   python train.py --config configs/your_config.yaml
+   # Run with custom configuration
+   python -m neuromosaic experiment --config custom_config.yaml --output-dir custom_search
+
+   # Resume a previous run
+   python -m neuromosaic experiment --config custom_config.yaml --resume
    ```
 
-4. Monitor experiments:
+### 3. Analysis and Visualization
 
-   - View logs in the specified logging directory
-   - Track metrics using TensorBoard:
-     ```bash
-     tensorboard --logdir logs/
-     ```
+Analyze and compare experiment results:
 
-5. Evaluate results:
+```bash
+# Basic analysis of results
+python -m neuromosaic analyze results_dir
 
-   ```bash
-   python evaluate.py --config configs/your_config.yaml --checkpoint path/to/checkpoint
-   ```
+# Compare two experiments
+python -m neuromosaic analyze results_dir --compare-with other_results_dir
 
-6. Common experiment workflows:
-   - Hyperparameter tuning:
-     ```bash
-     python scripts/tune_hyperparams.py --config configs/base_config.yaml --param-grid configs/param_grid.yaml
-     ```
-   - Multi-GPU training:
-     ```bash
-     python -m torch.distributed.launch --nproc_per_node=N train.py --config configs/your_config.yaml
-     ```
-   - Resume training:
-     ```bash
-     python train.py --config configs/your_config.yaml --resume path/to/checkpoint
-     ```
+# Export results in different formats
+python -m neuromosaic analyze results_dir --format json
+
+# Inspect a specific architecture
+python -m neuromosaic inspect <architecture-id> --detailed --export-code
+```
+
+### Additional Options
+
+- Set logging level for any command:
+
+  ```bash
+  python -m neuromosaic --log-level DEBUG quickstart
+  ```
+
+- All commands support `--help` for detailed usage information:
+  ```bash
+  python -m neuromosaic quickstart --help
+  python -m neuromosaic experiment --help
+  python -m neuromosaic analyze --help
+  python -m neuromosaic inspect --help
+  ```
+
+The experiment results are stored in the output directory and can be analyzed using the analysis commands above.
 
 ## Making Changes
 

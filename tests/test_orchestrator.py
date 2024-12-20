@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from neuromosaic.orchestrator import Orchestrator
 from neuromosaic.arch_space import ArchitectureVector
-from neuromosailm_code_gen import CodeGenerator
+from neuromosaic.llm_code_gen import CodeGenerator
 from neuromosaic.env_manager import ContainerManager
 
 

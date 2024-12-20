@@ -106,12 +106,16 @@ class BayesianOptimization(SearchStrategy):
                 - length_scale: GP kernel length scale
                 - exploration_weight: Acquisition function parameter
         """
-        super().__init__(config)
+        if "dimensions" not in config:
+            raise ValueError("BayesianOptimization requires 'dimensions' in config")
         self.dimensions = config["dimensions"]
+        super().__init__(config)
         self.acquisition_function = config.get(
             "acquisition_function", "expected_improvement"
         )
         self.exploration_weight = config.get("exploration_weight", 0.1)
+        self.num_trials = config.get("num_trials", 10)
+        self.parallel = config.get("parallel", False)
 
         self.gp = GaussianProcess(
             kernel=config.get("kernel", "matern"),
