@@ -1,0 +1,150 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env
+.venv
+.python-version
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+
+# Data and Models
+data/raw/*
+data/processed/*
+data/interim/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/interim/.gitkeep
+!data/external/.gitkeep
+*.h5
+*.pkl
+*.pt
+*.pth
+*.onnx
+*.pb
+
+# Experiment Artifacts
+experiments/*/
+logs/
+runs/
+wandb/
+lightning_logs/
+checkpoints/
+
+# DVC
+.dvc/
+/dvc.lock
+/dvc.yaml
+.dvcignore
+
+# Secrets
+*.key
+*.pem
+.secrets/
+credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+.*.swp
+._*
+
+# Documentation
+docs/_build/
+site/
+
+# Cache
+.cache/
+.local/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+
+# Logs
+*.log
+*.out
+logs/
+log/
+
+# Dependencies
+node_modules/
+yarn.lock
+package-lock.json
+
+# Distribution
+dist/
+build/
+*.tar.gz
+*.zip
+*.rar
+
+# Local development
+local_settings.py
+db.sqlite3
+*.sqlite3
+*.db
+
+# Environment variables
+.env*
+!.env.example
+
+# Weights & Biases
+wandb/
+
+# MLflow
+mlruns/
+
+# TensorBoard
+runs/
+
+# Ray Tune
+ray_results/
+
+# Keep these files
+!.gitkeep
+!README.md
+!requirements*.txt 
