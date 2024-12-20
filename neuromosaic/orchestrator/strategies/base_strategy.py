@@ -50,6 +50,7 @@ class SearchStrategy(ABC):
         """
         self.config = config
         self.history = []
+        self.bounds = {}  # Initialize bounds before setup
         self._setup_search_space()
 
     def _setup_search_space(self) -> None:

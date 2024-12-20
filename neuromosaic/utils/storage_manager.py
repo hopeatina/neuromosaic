@@ -8,7 +8,7 @@ This module provides functionality for:
 4. Access control for private data
 
 Example:
-    >>> from neuramosaic.utils.storage_manager import fetch_dataset
+    >>> from neuromosaic.utils.storage_manager import fetch_dataset
     >>> dataset = fetch_dataset("wikitext-103")
     >>> save_checkpoint(model, metrics, "checkpoints/best.pt")
 """
@@ -46,7 +46,7 @@ class StorageConfig:
     ARTIFACTS_ROOT = Path("experiments")
 
     # Cache settings
-    CACHE_DIR = Path.home() / ".cache" / "neuramosaic"
+    CACHE_DIR = Path.home() / ".cache" / "neuromosaic"
     MAX_CACHE_SIZE = 50 * 1024 * 1024 * 1024  # 50GB
 
     # Chunk size for downloads

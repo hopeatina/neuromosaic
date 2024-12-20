@@ -1,16 +1,17 @@
-# Contributing to Neuramosaic
+# Contributing to Neuromosaic
 
-Thank you for your interest in contributing to Neuramosaic! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to Neuromosaic! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
 1. [Code of Conduct](#code-of-conduct)
 2. [Getting Started](#getting-started)
 3. [Development Setup](#development-setup)
-4. [Making Changes](#making-changes)
-5. [Testing](#testing)
-6. [Documentation](#documentation)
-7. [Pull Requests](#pull-requests)
+4. [Running Experiments](#running-experiments)
+5. [Making Changes](#making-changes)
+6. [Testing](#testing)
+7. [Documentation](#documentation)
+8. [Pull Requests](#pull-requests)
 
 ## Code of Conduct
 
@@ -21,8 +22,8 @@ This project follows a standard code of conduct. Please be respectful and profes
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/your-username/neuramosaic.git
-   cd neuramosaic
+   git clone https://github.com/your-username/neuromosaic.git
+   cd neuromosaic
    ```
 3. Set up the development environment:
    ```bash
@@ -51,6 +52,54 @@ This project follows a standard code of conduct. Please be respectful and profes
    git config --local core.autocrlf input
    git config --local core.eol lf
    ```
+
+## Running Experiments
+
+1. Configure your experiment:
+
+   - Create a new configuration file in `configs/` or modify existing ones
+   - Set hyperparameters, model architecture, and dataset options
+   - Specify logging and checkpoint directories
+
+2. Prepare your data:
+
+   ```bash
+   python scripts/prepare_data.py --config configs/your_config.yaml
+   ```
+
+3. Run training:
+
+   ```bash
+   python train.py --config configs/your_config.yaml
+   ```
+
+4. Monitor experiments:
+
+   - View logs in the specified logging directory
+   - Track metrics using TensorBoard:
+     ```bash
+     tensorboard --logdir logs/
+     ```
+
+5. Evaluate results:
+
+   ```bash
+   python evaluate.py --config configs/your_config.yaml --checkpoint path/to/checkpoint
+   ```
+
+6. Common experiment workflows:
+   - Hyperparameter tuning:
+     ```bash
+     python scripts/tune_hyperparams.py --config configs/base_config.yaml --param-grid configs/param_grid.yaml
+     ```
+   - Multi-GPU training:
+     ```bash
+     python -m torch.distributed.launch --nproc_per_node=N train.py --config configs/your_config.yaml
+     ```
+   - Resume training:
+     ```bash
+     python train.py --config configs/your_config.yaml --resume path/to/checkpoint
+     ```
 
 ## Making Changes
 
@@ -91,18 +140,19 @@ This project follows a standard code of conduct. Please be respectful and profes
 
    ```bash
    pytest tests/
+   python -m pytest tests/ -v
    ```
 
 2. Run type checking:
 
    ```bash
-   mypy neuramosaic/
+   mypy neuromosaic/
    ```
 
 3. Run linting:
    ```bash
-   black neuramosaic/
-   flake8 neuramosaic/
+   black neuromosaic/
+   flake8 neuromosaic/
    ```
 
 ## Documentation
@@ -190,4 +240,4 @@ Feel free to:
 - Ask in the discussions section
 - Contact the maintainers
 
-Thank you for contributing to Neuramosaic!
+Thank you for contributing to Neuromosaic!

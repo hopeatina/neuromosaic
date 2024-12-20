@@ -1,6 +1,6 @@
 # Data Management
 
-This directory contains datasets and instructions for data management in Neuramosaic.
+This directory contains datasets and instructions for data management in Neuromosaic.
 
 ## Directory Structure
 
@@ -27,13 +27,13 @@ Some datasets are too large to store in the repository. These will be downloaded
 1. HuggingFace Datasets:
 
    ```python
-   from neuramosaic.utils.storage_manager import fetch_dataset
+   from neuromosaic.utils.storage_manager import fetch_dataset
    dataset = fetch_dataset("wikitext-103")
    ```
 
 2. Custom Datasets:
    ```python
-   from neuramosaic.utils.storage_manager import download_dataset
+   from neuromosaic.utils.storage_manager import download_dataset
    download_dataset("https://example.com/dataset.zip", "custom_dataset")
    ```
 
@@ -110,7 +110,7 @@ dvc pull
 Model checkpoints and experiment artifacts are stored separately from datasets:
 
 ```python
-from neuramosaic.utils.storage_manager import save_checkpoint
+from neuromosaic.utils.storage_manager import save_checkpoint
 
 # Save model checkpoint
 save_checkpoint(

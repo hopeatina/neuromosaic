@@ -6,8 +6,8 @@ import pytest
 import numpy as np
 from typing import Dict, Any
 
-from neuramosaic.arch_space import ArchitectureVector
-from neuramosaic.arch_space.vector_representation import ArchitectureSpec
+from neuromosaic.arch_space import ArchitectureVector
+from neuromosaic.arch_space.vector_representation import ArchitectureSpec
 
 
 @pytest.fixture

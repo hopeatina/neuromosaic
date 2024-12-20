@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Command-line interface for Neuramosaic.
+Command-line interface for Neuromosaic.
 
-This module provides a command-line interface for:
-- Running architecture searches
-- Managing experiments
-- Visualizing results
-- Configuring the system
+This module provides commands for:
+1. Running architecture searches
+2. Managing experiments
+3. Visualizing results
+4. Configuring the system
 
 Example:
     $ python cli.py search --config config.yaml --num-trials 100
@@ -21,9 +21,11 @@ import asyncio
 from pathlib import Path
 from typing import Optional
 
-from neuramosaic.orchestrator import Orchestrator
-from neuramosaic.utils.config import Config
-from neuramosaic.utils.logging import setup_logger
+from neuromosaic.orchestrator import Orchestrator
+from neuromosaic.utils.config import Config
+from neuromosaic.utils.logging import setup_logger
+from neuromosaic.meta_learning.visualization import plot_results, save_plot
+from neuromosaic.results_db import ResultsDB
 
 logger = setup_logger(__name__)
 
@@ -39,7 +41,7 @@ logger = setup_logger(__name__)
     help="Logging level",
 )
 def cli(config: Optional[str], log_level: str):
-    """Neuramosaic: Neural Architecture Search with LLM Code Generation"""
+    """Neuromosaic: Neural Architecture Search with LLM Code Generation"""
     if config:
         Config().load_config(config)
     logging.getLogger().setLevel(log_level)
@@ -83,8 +85,6 @@ async def search(num_trials: int, parallel: bool):
 )
 def visualize(metric: str, output: str, plot_type: str):
     """Visualize search results"""
-    from neuramosaic.meta_learning.visualization import plot_results, save_plot
-
     config = Config()
     fig = plot_results(metric, plot_type)
     save_plot(fig, output)
@@ -98,8 +98,6 @@ def visualize(metric: str, output: str, plot_type: str):
 @click.option("--output", type=click.Path(), required=True, help="Output file path")
 def export_results(format: str, output: str):
     """Export search results to file"""
-    from neuramosaic.results_db import ResultsDB
-
     config = Config()
     db = ResultsDB(config)
     results = db.list_all_runs()
@@ -122,8 +120,6 @@ def export_results(format: str, output: str):
 @click.argument("architecture_id")
 def inspect(architecture_id: str):
     """Inspect a specific architecture"""
-    from neuramosaic.results_db import ResultsDB
-
     config = Config()
     db = ResultsDB(config)
     result = db.get_run_info(architecture_id)

@@ -63,11 +63,16 @@ database:
 
 # Logging & Monitoring
 logging:
-  level: "INFO"
-  file: "neuramosaic.log"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  level: INFO
+  handlers:
+    - type: file
+      file: "neuromosaic.log"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    - type: console
+      format: "%(levelname)s: %(message)s"
 
-wandb:  # Optional: Weights & Biases integration
-  enabled: false
-  project: "neuramosaic"
-  entity: "your-username" 
+wandb:
+  enabled: true
+  project: "neuromosaic"
+  entity: null  # Your W&B username
+  tags: [] 

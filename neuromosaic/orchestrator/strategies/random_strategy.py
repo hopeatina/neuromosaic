@@ -50,8 +50,8 @@ class RandomSearch(SearchStrategy):
                 - bounds: Min/max values for dimensions
                 - num_samples: Total samples to generate
         """
+        self.dimensions = config.get("dimensions", 64)
         super().__init__(config)
-        self.dimensions = config["dimensions"]
         self.bounds = config.get("bounds", {})
         self.num_samples = config.get("num_samples", float("inf"))
         self.current_sample = 0

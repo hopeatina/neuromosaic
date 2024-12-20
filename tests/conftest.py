@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any, Generator
 
-from neuramosaic.utils.config import Config
+from neuromosaic.utils.config import Config
 
 
 @pytest.fixture
