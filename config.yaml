@@ -1,0 +1,73 @@
+# Neuramosaic Configuration
+
+# Architecture Search Space
+arch_space:
+  dimensions: 64  # Size of architecture vectors
+  bounds:
+    num_layers: [2, 12]
+    hidden_size: [128, 1024]
+    num_heads: [4, 16]
+    ffn_ratio: [2.0, 8.0]
+  categorical_dims:
+    ffn_type: ["vanilla", "gated", "expert"]
+    attention_type: ["vanilla", "linear", "sparse"]
+    norm_type: ["layer", "rmsnorm"]
+    activation: ["relu", "gelu", "swish"]
+
+# Search Strategy
+search_strategy:
+  type: "bayesian_optimization"  # or "random", "evolutionary"
+  acquisition_function: "expected_improvement"
+  kernel: "matern"
+  length_scale: 1.0
+  exploration_weight: 0.1
+  num_random_init: 10
+
+# LLM Code Generation
+llm:
+  provider: "openai"  # or "llama"
+  model: "gpt-4"
+  temperature: 0.7
+  max_tokens: 2000
+  retry_config:
+    max_retries: 3
+    initial_wait: 1.0
+    backoff_factor: 2.0
+
+# Container Environment
+container:
+  runtime: "docker"  # or "podman"
+  base_image: "pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime"
+  gpu_support: true
+  memory_limit: "16g"
+  timeout: 3600  # seconds
+
+# Training & Evaluation
+training:
+  batch_size: 32
+  max_epochs: 10
+  learning_rate: 0.001
+  optimizer: "adam"
+  scheduler: "cosine"
+  metrics:
+    - "accuracy"
+    - "loss"
+    - "latency"
+    - "memory_usage"
+
+# Results Database
+database:
+  type: "sqlite"  # or "postgres"
+  path: "results.db"
+  backup_interval: 3600  # seconds
+
+# Logging & Monitoring
+logging:
+  level: "INFO"
+  file: "neuramosaic.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+wandb:  # Optional: Weights & Biases integration
+  enabled: false
+  project: "neuramosaic"
+  entity: "your-username" 

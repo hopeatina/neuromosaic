@@ -5,37 +5,43 @@ NeuraMosaic is a research and development platform that explores and optimizes n
 The core idea is to represent each architecture as a structured vector in a flexible "architecture embedding space." This space defines what building blocks a model is made of, how they fit together, and the numeric 'magic numbers' (hyperparameters) that shape their behaviors. NeuraMosaic then uses these vector representations to automatically generate code for new architectures, train and evaluate them on small tasks, and learn which directions in this space are most promising. Over time, it refines its search, guided by performance metrics and insights from research literature.
 
 ## In short:
+
 NeuraMosaic helps you discover, understand, and evolve custom neural architectures, blending automated code generation with systematic exploration to find better models efficiently.
 
 ## Why NeuraMosaic?
 
-* **Composable Architectures**: Move beyond predefined sets of layers and architectures.
-* **Automated Code Generation**: Turn architecture "vectors" directly into runnable model code via LLM prompts.
-* **Meta-Learning & Visualization**: Collect performance results, create heatmaps and embeddings of architectural performance, and use them to guide future searches.
-* **Inspiration from Literature**: Seamlessly integrate known components from cutting-edge papers, enabling continuous innovation.
-* **Reproducibility & Versioning**: Every generated code snippet, environment, and experimental result is tracked and can be re-run or analyzed at any time.
+- **Composable Architectures**: Move beyond predefined sets of layers and architectures.
+- **Automated Code Generation**: Turn architecture "vectors" directly into runnable model code via LLM prompts.
+- **Meta-Learning & Visualization**: Collect performance results, create heatmaps and embeddings of architectural performance, and use them to guide future searches.
+- **Inspiration from Literature**: Seamlessly integrate known components from cutting-edge papers, enabling continuous innovation.
+- **Reproducibility & Versioning**: Every generated code snippet, environment, and experimental result is tracked and can be re-run or analyzed at any time.
 
 ## Target Users
 
-* **ML Researchers & Practitioners** who want to quickly test a broad range of model variations.
-* **AutoML Enthusiasts** seeking to push beyond standard hyperparameter tuning into architecture-level exploration.
-* **Developers** interested in LLM-Driven Code Generation as a practical application of generative AI to improve ML workflows.
+- **ML Researchers & Practitioners** who want to quickly test a broad range of model variations.
+- **AutoML Enthusiasts** seeking to push beyond standard hyperparameter tuning into architecture-level exploration.
+- **Developers** interested in LLM-Driven Code Generation as a practical application of generative AI to improve ML workflows.
 
 ## Project Goals
 
 ### Flexible Architecture Representation:
+
 Represent neural models as vectors that encode building blocks (attention types, feedforward variants, normalization layers) and hyperparameters (hidden sizes, number of layers).
 
 ### Scalable Automated Pipeline:
+
 Given an architecture vector, automatically generate the model code with LLMs, containerize it, train it on small tasks, evaluate results, and store metrics.
 
 ### Guided Search and Meta-Learning:
+
 Visualize performance "heatmaps" over the architecture space, identify promising regions, and refine the search strategy. Meta-learning guides which architectures to explore next.
 
 ### Incorporate Brain-Inspired and Literature-Based Components:
+
 Easily introduce new, exotic modules (e.g., feedback loops, Hebbian updates, sparse activations) inspired by neuroscience or recent papers.
 
 ### Reproducibility & Version Control:
+
 Track all experiments, versions of generated code, and environment details. Re-run and verify results anytime.
 
 ## MVP (Minimum Viable Product)
@@ -50,30 +56,30 @@ Track all experiments, versions of generated code, and environment details. Re-r
 
 ### Month 1-2: Foundation & MVP
 
-* Implement the initial vector encoding for a small set of known architectures (e.g., Transformer variants).
-* Set up LLM integration for code generation.
-* Run first experiments and store results in a local SQLite database.
-* Create simple visualization tools (2D projections, metrics dashboards).
+- Implement the initial vector encoding for a small set of known architectures (e.g., Transformer variants).
+- Set up LLM integration for code generation.
+- Run first experiments and store results in a local SQLite database.
+- Create simple visualization tools (2D projections, metrics dashboards).
 
 ### Month 3-4: Expanding Search & Meta-Learning
 
-* Integrate Bayesian optimization or evolutionary search to guide architecture selection.
-* Add basic brain-inspired modules (e.g., feedback connections, mixture-of-experts).
-* Implement meta-learning to prune unhelpful search directions and focus on promising areas.
-* Introduce a version-control scheme for generated code (Git integration) and container tags.
+- Integrate Bayesian optimization or evolutionary search to guide architecture selection.
+- Add basic brain-inspired modules (e.g., feedback connections, mixture-of-experts).
+- Implement meta-learning to prune unhelpful search directions and focus on promising areas.
+- Introduce a version-control scheme for generated code (Git integration) and container tags.
 
 ### Month 5: Literature Integration & Enhanced Visualization
 
-* Build a small knowledge base of known architectural innovations from recent papers.
-* Prompt LLM to incorporate these new components into candidate architectures.
-* Add interactive visualizations: heatmaps of performance, cluster analysis of architectures, and layered detail views.
+- Build a small knowledge base of known architectural innovations from recent papers.
+- Prompt LLM to incorporate these new components into candidate architectures.
+- Add interactive visualizations: heatmaps of performance, cluster analysis of architectures, and layered detail views.
 
 ### Month 6: Scaling & Refinement
 
-* Optimize training loops and possibly run multiple experiments in parallel.
-* Refine the code generation prompts and templates for better reliability.
-* Validate system by discovering a novel architecture that outperforms a known baseline on the test tasks.
-* Document best practices and finalize a stable API for external contributions.
+- Optimize training loops and possibly run multiple experiments in parallel.
+- Refine the code generation prompts and templates for better reliability.
+- Validate system by discovering a novel architecture that outperforms a known baseline on the test tasks.
+- Document best practices and finalize a stable API for external contributions.
 
 ## System Architecture Diagram
 
@@ -82,7 +88,7 @@ Below is a high-level view of how all components interact:
 ```scss
                ┌─────────────────────────┐
                │       User Interface     │
-               │ (CLI, Notebook, Dashboards) 
+               │ (CLI, Notebook, Dashboards)
                └─────┬───────────────────┘
                      │
                      v
@@ -140,3 +146,4 @@ Below is a high-level view of how all components interact:
       │ Strategy (BayesOpt,  │
       │ Evo Alg, etc.)       │
       └─────────────────────┘
+```
