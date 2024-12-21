@@ -1,87 +1,149 @@
-Overall Repository Structure
-A possible directory layout:
+# NeuroMosaic Architecture Documentation
 
-bash
-Copy code
-neuramosaic/
-├─ orchestrator/
-│ ├─ **init**.py
-│ ├─ orchestrator.py
-│ └─ strategies/ # different search strategies (BayesOpt, evolutionary, random)
-├─ arch_space/
-│ ├─ **init**.py
-│ ├─ vector_representation.py
-│ ├─ encoders/ # modules to encode different architectural components
-│ └─ decoders/ # modules to decode vectors into specification dicts
-├─ llm_code_gen/
-│ ├─ **init**.py
-│ ├─ codegen_interface.py
-│ ├─ providers/ # LLaMA, GPT-4, other LLM backends
-│ └─ prompts/ # prompt templates and prompt generation logic
-├─ env_manager/
-│ ├─ **init**.py
-│ ├─ container_manager.py
-│ └─ runners.py # logic to run code inside containers
-├─ training_eval/
-│ ├─ **init**.py
-│ ├─ trainer.py
-│ ├─ tasks/ # different training tasks and datasets
-│ └─ metrics/ # standardized metrics, logging utils
-├─ results_db/
-│ ├─ **init**.py
-│ ├─ db_interface.py
-│ ├─ schemas.py # ORM schemas or structured definitions
-│ └─ query_utils.py
-├─ meta_learning/
-│ ├─ **init**.py
-│ ├─ analysis.py
-│ ├─ visualization.py
-│ └─ optimization.py
-├─ utils/
-│ ├─ config.py # global configurations
-│ ├─ logging.py
-│ └─ version_control.py
-└─ README.md
-This structure aims to separate concerns cleanly, allowing contributors to focus on one area (e.g., adding a new LLM provider or a new architecture encoder) without disrupting the entire system.
+## Overview
 
-Component-by-Component Breakdown
+NeuroMosaic is an automated neural architecture search and optimization framework that leverages LLMs for code generation. The system employs a modular architecture to enable:
 
-1. Orchestrator
-   Purpose:
+- Automated exploration of neural network architectures
+- LLM-powered code generation for implementing architectures
+- Containerized training and evaluation
+- Results tracking and meta-learning optimization
 
-Manages the lifecycle of experiments: requests new architectures, triggers code generation, schedules training runs, and records results.
-Implements a “Control Loop” that interacts with all other components.
-Design Patterns & Concepts:
+## Repository Structure
 
-Strategy Pattern for Search Methods: The orchestrator can load different “search strategies” (random, Bayesian optimization, evolutionary algorithms) from orchestrator/strategies/. The orchestrator chooses which strategy to apply or can combine them.
-Observer Pattern for Result Updates: The orchestrator can observe changes in the results database to decide when to trigger the next experiment.
-Interfaces:
+```bash
+neuromosaic/
+├─ orchestrator/                  # Core experiment orchestration
+│  ├─ __init__.py
+│  ├─ orchestrator.py            # Main orchestration logic
+│  ├─ experiment.py              # Experiment lifecycle management
+│  └─ strategies/                # Search strategies
+│     ├─ __init__.py
+│     ├─ base.py                 # Base strategy interface
+│     ├─ bayesian.py             # Bayesian optimization
+│     ├─ evolutionary.py         # Evolutionary algorithms
+│     └─ random.py               # Random search baseline
+├─ arch_space/                   # Architecture representation
+│  ├─ __init__.py
+│  ├─ vector_representation.py
+│  ├─ constraints.py             # Architecture constraints
+│  ├─ encoders/                  # Vector encoding
+│  └─ decoders/                  # Vector decoding
+├─ llm_code_gen/                 # Code generation
+│  ├─ __init__.py
+│  ├─ codegen_interface.py
+│  ├─ validation.py              # Code validation
+│  ├─ providers/                 # LLM backends
+│  └─ prompts/                   # Prompt engineering
+├─ env_manager/                  # Execution environment
+│  ├─ __init__.py
+│  ├─ container_manager.py
+│  ├─ resource_monitor.py        # Resource usage tracking
+│  └─ runners.py
+├─ training_eval/                # Training & evaluation
+│  ├─ __init__.py
+│  ├─ trainer.py
+│  ├─ tasks/                     # Training tasks
+│  ├─ metrics/                   # Evaluation metrics
+│  └─ checkpointing.py          # Model checkpointing
+├─ results_db/                   # Results storage
+│  ├─ __init__.py
+│  ├─ db_interface.py
+│  ├─ migrations/                # Database migrations
+│  ├─ schemas.py
+│  └─ query_utils.py
+├─ meta_learning/               # Analysis & optimization
+│  ├─ __init__.py
+│  ├─ analysis.py
+│  ├─ visualization.py
+│  └─ optimization.py
+├─ api/                         # REST API interface
+│  ├─ __init__.py
+│  ├─ routes.py
+│  ├─ models.py
+│  └─ middleware.py
+├─ utils/                       # Shared utilities
+│  ├─ config.py
+│  ├─ logging.py
+│  ├─ security.py              # Security utilities
+│  └─ version_control.py
+├─ tests/                      # Test suite
+│  ├─ unit/
+│  ├─ integration/
+│  └─ e2e/
+├─ docs/                       # Documentation
+│  ├─ api/
+│  ├─ deployment/
+│  └─ development/
+├─ scripts/                    # Automation scripts
+│  ├─ setup.py
+│  └─ deploy.py
+├─ .github/                    # CI/CD workflows
+├─ requirements/
+│  ├─ base.txt
+│  ├─ dev.txt
+│  └─ prod.txt
+├─ docker/
+│  ├─ Dockerfile
+│  └─ docker-compose.yml
+├─ README.md
+└─ pyproject.toml
+```
 
-IOrchestrator: A high-level interface that defines methods like run_cycle(), get_next_architecture(), submit_results().
-Strategy interfaces: ISearchStrategy with methods like suggest_architecture(), update_with_results().
+## Component Architecture
+
+### 1. Orchestrator
+
+Purpose: Manages experiment lifecycle and coordinates system components.
+
+Key Interfaces:
+
+```python
+class IOrchestrator(Protocol):
+    async def run_cycle(self) -> ExperimentResult
+    async def get_next_architecture(self) -> ArchitectureVector
+    async def submit_results(self, results: ExperimentResult) -> None
+    async def handle_failure(self, error: ExperimentError) -> None
+
+class ISearchStrategy(Protocol):
+    async def suggest_architecture(self) -> ArchitectureVector
+    async def update_with_results(self, results: ExperimentResult) -> None
+    def get_search_space(self) -> SearchSpace
+```
+
+Design Patterns:
+
+- Strategy Pattern: Pluggable search algorithms
+- Observer Pattern: Event-driven result updates
+- Circuit Breaker: Fault tolerance for external services
+
 Data Flow:
 
-Orchestrator calls ISearchStrategy.suggest_architecture() -> receives a vector representing architecture.
-Passes vector to LLM code gen, receives generated code.
-Calls env_manager to run training in a container.
-After training, retrieves metrics from results_db.
-Updates strategy with update_with_results() and repeats. 2. Architecture Vector Space Representation
-Purpose:
+1. Strategy suggests architecture vector
+2. Vector passed to code generation
+3. Generated code executed in container
+4. Results stored and analyzed
+5. Strategy updated with feedback
 
-Defines how architectures are represented as vectors and how to transform these vectors into a structured specification (e.g., a dictionary describing layers, attention types, etc.).
-Design Patterns & Concepts:
+### 2. Architecture Vector Space
 
-Factory Pattern for Encoders/Decoders: Different subsets of architectures or new components can be added as plugins. Factories instantiate the right encoder/decoder classes based on configuration.
-Composite Pattern for Architecture Composition: Complex architectures built from multiple components (attention modules, FFN modules) can be combined compositely.
-Interfaces:
+Purpose: Manages architecture representation and transformation.
 
-IArchitectureEncoder: Given a specification dict, produce a vector (or vice versa).
-IArchitectureDecoder: Given a vector, produce a specification dict suitable for LLM prompting.
-Data Flow:
+Key Interfaces:
 
-Orchestrator requests a new architecture: ISearchStrategy returns a vector.
-arch_space uses IArchitectureDecoder to turn vector into a spec dict.
-After experiments, to store results, IArchitectureEncoder might help encode architecture for meta-analysis. 3. LLM Code Generation
+```python
+class IArchitectureEncoder(Protocol):
+    def encode(self, spec: ArchitectureSpec) -> ArchitectureVector
+    def decode(self, vector: ArchitectureVector) -> ArchitectureSpec
+    def validate(self, vector: ArchitectureVector) -> bool
+
+class IConstraintValidator(Protocol):
+    def validate_constraints(self, spec: ArchitectureSpec) -> ValidationResult
+    def get_constraint_violations(self, spec: ArchitectureSpec) -> list[Violation]
+```
+
+### 3. LLM Code Generation
+
 Purpose:
 
 Converts the architecture specification into runnable PyTorch code using prompts and an LLM.
@@ -192,3 +254,159 @@ Add a new visualization tool in meta_learning/visualization.py implementing IVis
 
 Database Migration:
 If switching from SQLite to Postgres, implement a new IResultsDB adapter in results_db/, and point config to use it. The rest of the system remains unchanged.
+
+## Security Considerations
+
+1. API Security
+
+- Rate limiting on API endpoints
+- JWT-based authentication
+- Input validation and sanitization
+- Secure credential management
+
+2. Container Security
+
+- Minimal base images
+- No root execution
+- Resource limits
+- Network isolation
+
+3. Data Security
+
+- Encryption at rest
+- Secure backup procedures
+- Access control and audit logging
+
+## Configuration Management
+
+Configuration follows a hierarchical structure:
+
+1. Default configurations in code
+2. Environment-specific overrides
+3. Instance-specific settings
+4. Runtime overrides
+
+Configuration sources (in order of precedence):
+
+1. Command line arguments
+2. Environment variables
+3. Configuration files
+4. Default values
+
+## Testing Strategy
+
+1. Unit Tests
+
+- Component isolation
+- Mock external dependencies
+- Property-based testing for vector spaces
+
+2. Integration Tests
+
+- Component interaction
+- Database operations
+- API endpoints
+
+3. End-to-End Tests
+
+- Full experiment cycles
+- Deployment verification
+- Performance benchmarks
+
+## API Documentation
+
+API documentation follows OpenAPI 3.0 specification and includes:
+
+1. Endpoint descriptions
+2. Request/response schemas
+3. Authentication requirements
+4. Rate limiting details
+5. Error responses
+
+## Development Workflow
+
+1. Feature Development
+
+- Branch naming: feature/description
+- PR template usage
+- Code review requirements
+- CI/CD pipeline checks
+
+2. Release Process
+
+- Semantic versioning
+- Changelog maintenance
+- Migration scripts
+- Rollback procedures
+
+## Monitoring and Observability
+
+1. Metrics Collection
+
+- Resource utilization
+- Experiment success rates
+- Model performance
+- API latencies
+
+2. Logging
+
+- Structured logging
+- Log levels
+- Correlation IDs
+- Error tracking
+
+3. Alerting
+
+- Performance thresholds
+- Error rates
+- Resource constraints
+- Security events
+
+## Contributing Guidelines
+
+1. Code Style
+
+- PEP 8 compliance
+- Type hints
+- Documentation strings
+- Code formatting (black)
+
+2. Testing Requirements
+
+- Test coverage thresholds
+- Performance benchmarks
+- Security scanning
+
+3. Review Process
+
+- PR templates
+- Required reviewers
+- Automated checks
+- Documentation updates
+
+## Deployment
+
+1. Environment Setup
+
+- Infrastructure as Code
+- Container orchestration
+- Scaling policies
+- Backup procedures
+
+2. Monitoring
+
+- Health checks
+- Performance metrics
+- Resource utilization
+- Alert configuration
+
+3. Maintenance
+
+- Update procedures
+- Backup verification
+- Security patching
+- Performance tuning
+
+```
+
+```

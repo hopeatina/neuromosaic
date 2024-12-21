@@ -12,7 +12,7 @@ The callbacks coordinate with the ResultsDB to fetch and display real-time
 experiment data and metrics.
 """
 
-from dash import Input, Output, State
+from dash import Input, Output, State, html
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 import numpy as np
@@ -85,8 +85,9 @@ def register_callbacks(app):
                     + "X: %{x:.2f}<br>"
                     + "Y: %{y:.2f}<br>"
                     + "Z: %{z:.2f}<br>"
-                    + f"{metric}: %{marker.color:.2f}",
+                    + f"{metric}: %{{customdata:.2f}}",
                     text=[f"#{i}" for i in range(n_points)],
+                    customdata=colors,
                 )
             ]
         )

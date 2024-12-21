@@ -18,7 +18,7 @@ def get_db_instance(config: Optional[Dict[str, Any]] = None) -> BaseResultsDB:
     Get or create a database instance.
 
     Args:
-        config: Optional database configuration
+        config: Optional Config object with database configuration
 
     Returns:
         BaseResultsDB: Database interface instance
@@ -26,7 +26,9 @@ def get_db_instance(config: Optional[Dict[str, Any]] = None) -> BaseResultsDB:
     global _db_instance
 
     if _db_instance is None:
-        _db_instance = ResultsDB(config or {})
+        if config is None:
+            raise RuntimeError("Database configuration not provided")
+        _db_instance = ResultsDB(config)
 
     return _db_instance
 
@@ -37,7 +39,15 @@ class ResultsDB(BaseResultsDB):
     def __init__(self, config: Dict[str, Any]):
         """Initialize the results database."""
         super().__init__(config)
-        self.db_path = config.database.db_url.replace("sqlite:///", "")
+        # Get database configuration, either from Config object or dict
+        if hasattr(config, "database"):
+            db_config = config.database
+            self.db_path = db_config.db_url.replace("sqlite:///", "")
+        else:
+            db_config = config.get("database", {})
+            self.db_path = db_config.get("db_url", "sqlite:///results.db").replace(
+                "sqlite:///", ""
+            )
         self._init_db()
 
     def _init_db(self):

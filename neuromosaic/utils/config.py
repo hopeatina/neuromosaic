@@ -21,22 +21,35 @@ import os
 import yaml
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, List
-from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, Optional, Union, List, TYPE_CHECKING
+from dataclasses import dataclass, field, asdict, fields
 from dotenv import load_dotenv
 
 from ..arch_space.vector_representation import ArchSpace
-from ..orchestrator.strategies.random_strategy import RandomSearch
-from ..orchestrator.strategies.bayesopt_strategy import BayesianOptimization
 from .exceptions import ConfigurationError
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Use TYPE_CHECKING for strategy type hints to avoid circular imports
+if TYPE_CHECKING:
+    from ..orchestrator.strategies.random_strategy import RandomSearch
+    from ..orchestrator.strategies.bayesopt_strategy import BayesianOptimization
+
 
 @dataclass
 class BaseConfig:
     """Base configuration class that provides dictionary-style access."""
+
+    def __post_init__(self):
+        """Handle any unknown fields by logging warnings."""
+        known_fields = {f.name for f in fields(self)}
+        for key, value in dict(self.__dict__).items():
+            if key not in known_fields:
+                logging.warning(
+                    f"Unknown configuration field '{key}' for {self.__class__.__name__}, ignoring it"
+                )
+                delattr(self, key)
 
     def get(self, key: str, default: Any = None) -> Any:
         """
@@ -98,6 +111,13 @@ class LLMConfig(BaseConfig):
     model: str = field(default="gpt-4")
     temperature: float = field(default=0.7)
     max_tokens: int = field(default=2000)
+    retry_config: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "max_retries": 3,
+            "initial_wait": 1.0,
+            "backoff_factor": 2.0,
+        }
+    )
 
     @classmethod
     def from_env(cls) -> "LLMConfig":
@@ -110,16 +130,23 @@ class LLMConfig(BaseConfig):
             model=os.getenv("LLM_MODEL", "gpt-4"),
             temperature=float(os.getenv("LLM_TEMPERATURE", "0.7")),
             max_tokens=int(os.getenv("LLM_MAX_TOKENS", "2000")),
+            retry_config={"max_retries": 3, "initial_wait": 1.0, "backoff_factor": 2.0},
         )
 
     def __post_init__(self):
         """Validate LLM configuration."""
-        if self.provider not in ["openai", "anthropic", "cohere"]:
+        if self.provider not in ["openai", "anthropic", "cohere", "llama"]:
             raise ConfigurationError(f"Invalid LLM provider: {self.provider}")
         if self.temperature < 0 or self.temperature > 1:
             raise ConfigurationError(f"Invalid temperature: {self.temperature}")
         if self.max_tokens <= 0:
             raise ConfigurationError(f"Invalid max_tokens: {self.max_tokens}")
+        if self.retry_config is None:
+            self.retry_config = {
+                "max_retries": 3,
+                "initial_wait": 1.0,
+                "backoff_factor": 2.0,
+            }
 
 
 @dataclass
@@ -136,7 +163,7 @@ class StorageConfig(BaseConfig):
         return cls(
             root=Path(os.getenv("STORAGE_ROOT", "data")),
             cache_size=os.getenv("MAX_CACHE_SIZE", "50GB"),
-            artifact_retention_days=int(os.getenv("ARTIFACT_RETENTION_DAYS", "30")),
+            artifact_retention_days=30,
         )
 
 
@@ -150,6 +177,8 @@ class DatabaseConfig(BaseConfig):
     user: str = field(default="postgres")
     password: Optional[str] = field(default=None)
     db_url: str = field(default="sqlite:///neuromosaic.db")
+    type: Optional[str] = field(default="sqlite")
+    path: Optional[str] = field(default=None)
 
     @classmethod
     def from_env(cls) -> "DatabaseConfig":
@@ -161,7 +190,16 @@ class DatabaseConfig(BaseConfig):
             user=os.getenv("DB_USER", "postgres"),
             password=os.getenv("DB_PASSWORD"),
             db_url=os.getenv("DB_URL", "sqlite:///neuromosaic.db"),
+            type=os.getenv("DB_TYPE", "sqlite"),
+            path=os.getenv("DB_PATH"),
         )
+
+    def __post_init__(self):
+        """Validate database configuration."""
+        super().__post_init__()
+        if self.type == "sqlite" and not self.path and "sqlite:///" not in self.db_url:
+            self.path = "neuromosaic.db"
+            self.db_url = f"sqlite:///{self.path}"
 
 
 @dataclass
@@ -171,6 +209,10 @@ class ContainerConfig(BaseConfig):
     device: str = field(default="cpu")
     memory_limit: str = field(default="8GB")
     num_cpus: int = field(default=4)
+    runtime: str = field(default="docker")
+    base_image: str = field(default="pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime")
+    gpu_support: bool = field(default=True)
+    timeout: int = field(default=3600)
 
     @classmethod
     def from_env(cls) -> "ContainerConfig":
@@ -179,6 +221,12 @@ class ContainerConfig(BaseConfig):
             device=os.getenv("CONTAINER_DEVICE", "cpu"),
             memory_limit=os.getenv("CONTAINER_MEMORY_LIMIT", "8GB"),
             num_cpus=int(os.getenv("CONTAINER_NUM_CPUS", "4")),
+            runtime=os.getenv("CONTAINER_RUNTIME", "docker"),
+            base_image=os.getenv(
+                "CONTAINER_BASE_IMAGE", "pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime"
+            ),
+            gpu_support=os.getenv("CONTAINER_GPU_SUPPORT", "true").lower() == "true",
+            timeout=int(os.getenv("CONTAINER_TIMEOUT", "3600")),
         )
 
     def __post_init__(self):
@@ -187,6 +235,8 @@ class ContainerConfig(BaseConfig):
             raise ConfigurationError(f"Invalid device: {self.device}")
         if self.num_cpus <= 0:
             raise ConfigurationError(f"Invalid number of CPUs: {self.num_cpus}")
+        if self.runtime not in ["docker", "podman"]:
+            raise ConfigurationError(f"Invalid runtime: {self.runtime}")
         try:
             parse_size(self.memory_limit)
         except ValueError:
@@ -202,6 +252,16 @@ class MonitoringConfig(BaseConfig):
     wandb_api_key: Optional[str] = field(default=None)
     wandb_project: str = field(default="neuromosaic")
     wandb_entity: Optional[str] = field(default=None)
+    handlers: List[Dict[str, str]] = field(
+        default_factory=lambda: [
+            {
+                "type": "file",
+                "file": "neuromosaic.log",
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            },
+            {"type": "console", "format": "%(levelname)s: %(message)s"},
+        ]
+    )
 
     @classmethod
     def from_env(cls) -> "MonitoringConfig":
@@ -243,21 +303,42 @@ class Config(BaseConfig):
     security: SecurityConfig = field(default_factory=SecurityConfig)
     debug: bool = field(default=False)
     environment: str = field(default="production")
-    arch_space: ArchSpace = field(default_factory=ArchSpace)
-    search_strategy: Union[RandomSearch, BayesianOptimization] = field(
-        default_factory=lambda: BayesianOptimization(
-            {
-                "dimensions": 64,
-                "num_trials": 10,
-                "type": "bayesian_optimization",
-                "kernel": "matern",
-                "length_scale": 1.0,
-                "acquisition_function": "expected_improvement",
-                "exploration_weight": 0.1,
-            }
-        )
+    arch_space: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "dimensions": 64,
+            "bounds": {
+                "num_layers": [2, 12],
+                "hidden_size": [128, 1024],
+                "num_heads": [4, 16],
+                "ffn_ratio": [2.0, 8.0],
+            },
+            "categorical_dims": {
+                "ffn_type": ["vanilla", "gated", "expert"],
+                "attention_type": ["vanilla", "linear", "sparse"],
+                "norm_type": ["layer", "rmsnorm"],
+                "activation": ["relu", "gelu", "swish"],
+            },
+        }
+    )
+    search_strategy: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "type": "bayesian_optimization",
+            "acquisition_function": "expected_improvement",
+            "kernel": "matern",
+            "length_scale": 1.0,
+            "exploration_weight": 0.1,
+            "num_random_init": 10,
+        }
     )
     training: Training = field(default_factory=Training)
+    wandb: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "enabled": True,
+            "project": "neuromosaic",
+            "entity": None,
+            "tags": [],
+        }
+    )
 
     def __post_init__(self):
         """Initialize with environment variables if not already set."""
@@ -277,17 +358,15 @@ class Config(BaseConfig):
             debug=os.getenv("DEBUG", "false").lower() == "true",
             environment=os.getenv("ENVIRONMENT", "production"),
             arch_space=ArchSpace(),
-            search_strategy=BayesianOptimization(
-                {
-                    "dimensions": 64,
-                    "num_trials": 10,
-                    "type": "bayesian_optimization",
-                    "kernel": "matern",
-                    "length_scale": 1.0,
-                    "acquisition_function": "expected_improvement",
-                    "exploration_weight": 0.1,
-                }
-            ),
+            search_strategy={
+                "dimensions": 64,
+                "num_trials": 10,
+                "type": "bayesian_optimization",
+                "kernel": "matern",
+                "length_scale": 1.0,
+                "acquisition_function": "expected_improvement",
+                "exploration_weight": 0.1,
+            },
             training=Training(),
         )
 
@@ -335,34 +414,13 @@ class Config(BaseConfig):
             if "arch_space" in yaml_config:
                 self.arch_space = ArchSpace(**yaml_config["arch_space"])
             if "search_strategy" in yaml_config:
-                strategy_config = yaml_config["search_strategy"]
-                strategy_type = strategy_config.get("type", "bayesian_optimization")
-                # Ensure dimensions is set
-                if "dimensions" not in strategy_config:
-                    strategy_config["dimensions"] = 64
-
-                # Add default values for bayesian optimization
-                if strategy_type == "bayesian_optimization":
-                    defaults = {
-                        "kernel": "matern",
-                        "length_scale": 1.0,
-                        "acquisition_function": "expected_improvement",
-                        "exploration_weight": 0.1,
-                    }
-                    for key, value in defaults.items():
-                        if key not in strategy_config:
-                            strategy_config[key] = value
-
-                if strategy_type == "random":
-                    self.search_strategy = RandomSearch(strategy_config)
-                elif strategy_type == "bayesian_optimization":
-                    self.search_strategy = BayesianOptimization(strategy_config)
-                else:
-                    raise ConfigurationError(
-                        f"Unsupported search strategy type: {strategy_type}"
-                    )
-            if "training" in yaml_config:
-                self.training = Training(**yaml_config["training"])
+                # Store as dict, let orchestrator handle instantiation
+                self.search_strategy = yaml_config["search_strategy"]
+                # Ensure required fields
+                if "type" not in self.search_strategy:
+                    self.search_strategy["type"] = "bayesian_optimization"
+                if "dimensions" not in self.search_strategy:
+                    self.search_strategy["dimensions"] = 64
 
             # Update simple fields
             self.debug = yaml_config.get("debug", self.debug)
@@ -378,6 +436,7 @@ class Config(BaseConfig):
 def parse_size(size_str: str) -> int:
     """Parse size string (e.g., '50GB' or '50G') to bytes."""
     # Support both full units and single letter units
+    print(size_str)
     units = {
         "TB": 1024**4,
         "T": 1024**4,
@@ -471,8 +530,31 @@ def validate_config(config: Config) -> None:
         raise ConfigurationError("Invalid arch_space configuration")
 
     # Validate search_strategy configuration
-    if not isinstance(config.search_strategy, (RandomSearch, BayesianOptimization)):
+    if TYPE_CHECKING:
+        from ..orchestrator.strategies.random_strategy import RandomSearch
+        from ..orchestrator.strategies.bayesopt_strategy import BayesianOptimization
+
+    if not (
+        isinstance(config.search_strategy, dict)
+        or isinstance(config.search_strategy, (RandomSearch, BayesianOptimization))
+    ):
         raise ConfigurationError("Invalid search_strategy configuration")
+
+    # If dict, validate required fields
+    if isinstance(config.search_strategy, dict):
+        required_fields = ["dimensions", "type"]
+        for field in required_fields:
+            if field not in config.search_strategy:
+                raise ConfigurationError(
+                    f"Missing required field in search_strategy: {field}"
+                )
+
+        valid_types = {"random", "bayesian_optimization"}
+        if config.search_strategy["type"] not in valid_types:
+            raise ConfigurationError(
+                f"Invalid search strategy type: {config.search_strategy['type']}. "
+                f"Must be one of {valid_types}"
+            )
 
     # Validate training configuration
     if not isinstance(config.training, Training):

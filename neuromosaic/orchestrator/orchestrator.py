@@ -14,11 +14,12 @@ Example:
     >>> orchestrator.run_cycle()  # Runs one complete search cycle
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
 from pathlib import Path
 import asyncio
 import logging
 from datetime import datetime
+from dataclasses import asdict
 
 from ..arch_space import ArchitectureVector
 from ..llm_code_gen import CodeGenerator
@@ -28,19 +29,25 @@ from ..results_db.db import ResultsDB as ResultsDBImpl
 from ..utils.logging import setup_logger
 from ..utils.version_control import VersionControl
 from .interface import IOrchestrator
-from .strategies import RandomSearch, BayesianOptimization
+
+# Use TYPE_CHECKING to avoid circular imports
+if TYPE_CHECKING:
+    from ..utils.config import Config
+    from .strategies import RandomSearch, BayesianOptimization
 
 logger = setup_logger(__name__)
 
 _orchestrator_instance: Optional[IOrchestrator] = None
 
 
-def get_orchestrator_instance(config: Optional[Dict[str, Any]] = None) -> IOrchestrator:
+def get_orchestrator_instance(
+    config: Optional[Union[Dict[str, Any], "Config"]] = None
+) -> IOrchestrator:
     """
     Get or create an orchestrator instance.
 
     Args:
-        config: Optional configuration for the orchestrator
+        config: Optional configuration for the orchestrator. Can be either a Config instance or a dict.
 
     Returns:
         IOrchestrator: Orchestrator interface instance
@@ -49,21 +56,17 @@ def get_orchestrator_instance(config: Optional[Dict[str, Any]] = None) -> IOrche
 
     if _orchestrator_instance is None:
         if config is None:
-            # Create default config
-            config = {
-                "search_strategy": {
-                    "type": "random",
-                    "dimensions": 64,
-                },
-                "llm": {
-                    "provider": "openai",
-                    "model": "gpt-4",
-                },
-                "container": {
-                    "runtime": "docker",
-                    "device": "cpu",
-                },
-            }
+            # Create default config using Config.from_env()
+            from ..utils.config import Config
+
+            config = Config.from_env()
+        elif isinstance(config, dict):
+            # Convert dict to Config instance
+            from ..utils.config import Config
+
+            base_config = Config.from_env()
+            # TODO: Implement proper merging of config dict with base config
+            config = base_config
         _orchestrator_instance = Orchestrator(config)
 
     return _orchestrator_instance
@@ -81,19 +84,19 @@ class Orchestrator(IOrchestrator):
     4. Record results and update search strategy
 
     Attributes:
-        config (Dict[str, Any]): Configuration dictionary containing:
+        config (Config): Configuration object containing:
             - search_strategy: Strategy class name or instance
             - llm_provider: LLM provider configuration
             - container_config: Container runtime settings
             - experiment_defaults: Default training parameters
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: "Config"):
         """
         Initialize the orchestrator with configuration.
 
         Args:
-            config: Configuration dictionary with all necessary settings
+            config: Configuration object with all necessary settings
         """
         self.config = config
         self._setup_components()
@@ -101,25 +104,51 @@ class Orchestrator(IOrchestrator):
 
     def _setup_components(self) -> None:
         """Initialize all required components from configuration."""
+        # Import strategies here to avoid circular imports
+        from .strategies import RandomSearch, BayesianOptimization
+
         # Initialize search strategy
         if isinstance(self.config.search_strategy, RandomSearch):
             self._search_strategy = self.config.search_strategy
         elif isinstance(self.config.search_strategy, BayesianOptimization):
             self._search_strategy = self.config.search_strategy
         else:
-            raise ValueError(
-                f"Unknown search strategy type: {type(self.config.search_strategy)}"
-            )
+            # Create search strategy instance based on config
+            strategy_config = self.config.search_strategy
+            strategy_type = strategy_config.get("type", "bayesian_optimization")
+
+            if strategy_type == "random":
+                self._search_strategy = RandomSearch(strategy_config)
+            elif strategy_type == "bayesian_optimization":
+                self._search_strategy = BayesianOptimization(strategy_config)
+            else:
+                raise ValueError(f"Unknown search strategy type: {strategy_type}")
 
         # Initialize code generator if not already set (e.g. by tests)
         if not hasattr(self, "_code_generator"):
-            # Skip OpenAI initialization in development mode
             if self.config.environment == "development":
-                self._code_generator = None
-            else:
-                from ..llm_code_gen.providers import OpenAICodeGenerator
+                # Use mock generator in development mode
+                from ..llm_code_gen.providers import MockCodeGenerator
 
-                self._code_generator = OpenAICodeGenerator(self.config.llm)
+                self._code_generator = MockCodeGenerator(asdict(self.config.llm))
+            else:
+                # Initialize real provider based on config
+                provider = self.config.llm.get("provider", "openai")
+                if provider == "openai":
+                    from ..llm_code_gen.providers import OpenAICodeGenerator
+
+                    self._code_generator = OpenAICodeGenerator(asdict(self.config.llm))
+                elif provider == "llama":
+                    from ..llm_code_gen.providers import LlamaCodeGenerator
+
+                    self._code_generator = LlamaCodeGenerator(asdict(self.config.llm))
+                else:
+                    raise ValueError(f"Unknown LLM provider: {provider}")
+
+            logger.info(
+                "Initialized code generator: %s",
+                self._code_generator.__class__.__name__,
+            )
 
         # Initialize container manager if not already set (e.g. by tests)
         if not hasattr(self, "_container_manager"):

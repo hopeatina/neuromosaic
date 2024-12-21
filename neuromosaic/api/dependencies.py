@@ -6,6 +6,7 @@ on_startup and on_shutdown events, database sessions, orchestrators, etc.
 """
 
 from typing import Generator, Optional
+import os
 
 from fastapi import Depends
 
@@ -15,6 +16,7 @@ from neuromosaic.orchestrator.interface import IOrchestrator
 from neuromosaic.orchestrator.orchestrator import get_orchestrator_instance
 from neuromosaic.arch_space.vector_representation import IArchitectureEncoder
 from neuromosaic.arch_space.encoder import get_encoder_instance
+from neuromosaic.utils.config import Config
 
 # Global instances
 _db_instance: Optional[IResultsDB] = None
@@ -28,7 +30,15 @@ async def on_startup():
     database instance and orchestrator if needed.
     """
     global _db_instance, _orchestrator_instance, _encoder_instance
-    _db_instance = get_db_instance()
+
+    # Load configuration from environment
+    if "NEUROMOSAIC_CONFIG" not in os.environ:
+        raise RuntimeError("NEUROMOSAIC_CONFIG environment variable not set")
+
+    config = Config.from_env()
+    config.load_config(os.environ["NEUROMOSAIC_CONFIG"])
+
+    _db_instance = get_db_instance(config)
     _orchestrator_instance = get_orchestrator_instance()
     _encoder_instance = get_encoder_instance()
 

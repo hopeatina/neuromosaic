@@ -66,6 +66,7 @@ Implementation Notes:
     - All commands support the --help option for detailed usage information.
 """
 
+import traceback
 import click
 import yaml
 import logging
@@ -74,6 +75,9 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 import shutil
 import uvicorn
+import multiprocessing
+from dataclasses import asdict
+import socket
 
 from neuromosaic.orchestrator import Orchestrator
 from neuromosaic.utils.config import Config, LLMConfig
@@ -81,42 +85,9 @@ from neuromosaic.utils.logging import setup_logger
 from neuromosaic.meta_learning.visualization import plot_results, save_plot
 from neuromosaic.results_db import ResultsDB
 from neuromosaic.api.config import get_api_settings
+from neuromosaic.frontend.dashboard import run_dashboard
 
 logger = setup_logger(__name__)
-
-DEFAULT_CONFIG = {
-    "arch_space": {
-        "dimensions": 64,
-        "bounds": {"num_layers": [2, 8], "hidden_size": [128, 512]},
-    },
-    "search_strategy": {
-        "type": "bayesian_optimization",
-        "num_trials": 10,
-        "dimensions": 64,
-    },
-    "training": {
-        "batch_size": 32,
-        "max_epochs": 5,
-        "learning_rate": 0.001,
-        "optimizer": "adam",
-        "scheduler": "cosine",
-        "metrics": ["accuracy", "loss", "latency", "memory_usage"],
-    },
-    "container": {
-        "device": "cpu",
-        "memory_limit": "8GB",
-        "num_cpus": 4,
-    },
-    "llm": {
-        "provider": "openai",
-        "model": "gpt-4",
-        "temperature": 0.7,
-        "max_tokens": 2000,
-        "openai_api_key": None,  # Will be loaded from environment
-        "anthropic_api_key": None,  # Will be loaded from environment
-        "cohere_api_key": None,  # Will be loaded from environment
-    },
-}
 
 
 def analyze_results(results: List[Dict[str, Any]], metric: str) -> Dict[str, Any]:
@@ -234,30 +205,77 @@ async def _run_orchestrator(orchestrator, batch_size: int, parallel: bool = True
     return await orchestrator.run_batch(batch_size=batch_size, parallel=parallel)
 
 
+def find_available_port(start_port: int = 8050, max_attempts: int = 100) -> int:
+    """Find an available port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(
+        f"Could not find an available port after {max_attempts} attempts"
+    )
+
+
 async def _run_quickstart(
     output_dir: str, cpu: bool = False, gpu: bool = False, batch_size: int = 5
 ) -> None:
     """Async implementation of quickstart command."""
     try:
-        # Create output directory
+        # Create output directory first
         output_dir_path = Path(output_dir)
         output_dir_path.mkdir(parents=True, exist_ok=True)
 
-        # Create default config
-        config = DEFAULT_CONFIG.copy()
+        # Initialize config object with defaults
+        config_obj = Config.from_env()
+
+        # Update specific values
         if cpu:
-            config["container"]["device"] = "cpu"
+            config_obj.container.device = "cpu"
         elif gpu:
-            config["container"]["device"] = "gpu"
+            config_obj.container.device = "gpu"
 
-        # Save config
-        config_path = output_dir_path / "config.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config, f)
+        # Update database path to be in the output directory
+        config_obj.database.db_url = f"sqlite:///{output_dir_path}/results.db"
 
-        # Run experiment
-        config_obj = Config.from_env()  # Create config with environment variables
-        config_obj.load_config(config_path)  # Then load YAML config
+        # Save config for reference
+        # config_path = output_dir_path / "config.yaml"
+        # with open(config_path, "w") as f:
+        #     yaml.dump(asdict(config_obj), f)
+
+        # Start the API server in the background with proper config
+        settings = get_api_settings()
+        api_host = settings.api_host
+        api_port = find_available_port(8000)
+        click.echo(f"Starting API server at http://{api_host}:{api_port}")
+
+        api_process = multiprocessing.Process(
+            target=uvicorn.run,
+            args=("neuromosaic.api.main:app",),
+            kwargs={
+                "host": api_host,
+                "port": api_port,
+                "log_level": "info",
+                "reload": False,
+            },
+        )
+        api_process.start()
+
+        # Start the dashboard in the background
+        dashboard_host = "0.0.0.0"
+        dashboard_port = find_available_port(8050)
+        click.echo(f"Starting dashboard at http://{dashboard_host}:{dashboard_port}")
+        dashboard_process = multiprocessing.Process(
+            target=run_dashboard,
+            kwargs={
+                "host": dashboard_host,
+                "port": dashboard_port,
+                "debug": False,
+            },
+        )
+        dashboard_process.start()
 
         # Create orchestrator and run batch
         orchestrator = Orchestrator(config_obj)
@@ -265,19 +283,50 @@ async def _run_quickstart(
 
         # Process results
         if results:
-            best_result = max(results, key=lambda x: x["metrics"]["accuracy"])
+            best_result = None
+            best_accuracy = -1
+            for result in results:
+                if result and isinstance(result, dict):
+                    metrics = result.get("metrics", {})
+                    accuracy = (
+                        metrics.get("accuracy", 0) if isinstance(metrics, dict) else 0
+                    )
+                    if accuracy > best_accuracy:
+                        best_accuracy = accuracy
+                        best_result = result
+
+            if not best_result:
+                logging.error("No valid results found with metrics")
+                raise click.Abort()
+
             click.echo("Search completed successfully!")
             click.echo(f"Results saved in {output_dir}")
-            click.echo(
-                f"Best architecture achieved {best_result['metrics']['accuracy']:.2f}% accuracy"
-            )
+            if best_result.get("metrics"):
+                click.echo(
+                    f"Best architecture achieved {best_result['metrics']['accuracy']:.2f}% accuracy"
+                )
             click.echo(f"Total architectures evaluated: {len(results)}")
         else:
             click.echo("Search completed but no valid results were produced.")
 
+        # Keep the servers running until user interrupts
+        click.echo("\nServers are running in the background. Press Ctrl+C to stop.")
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            click.echo("\nShutting down servers...")
+            api_process.terminate()
+            dashboard_process.terminate()
+            api_process.join()
+            dashboard_process.join()
+
     except Exception as e:
         logger.error(f"Error during quickstart: {str(e)}")
+        # stack trace
+        logger.error(f"Stack trace: {traceback.format_exc()}")
         click.echo(f"Error during search: {str(e)}", err=True)
+
         raise click.Abort()
 
 

@@ -6,5 +6,6 @@ for different LLM providers like OpenAI, Anthropic, etc.
 """
 
 from .openai_provider import OpenAICodeGenerator
+from .llama_provider import LlamaCodeGenerator, MockCodeGenerator
 
-__all__ = ["OpenAICodeGenerator"]
+__all__ = ["OpenAICodeGenerator", "LlamaCodeGenerator", "MockCodeGenerator"]
