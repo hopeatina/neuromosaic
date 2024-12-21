@@ -5,7 +5,7 @@ from click.testing import CliRunner
 from pathlib import Path
 import yaml
 import json
-from unittest.mock import patch, Mock, AsyncMock
+from unittest.mock import patch, Mock, AsyncMock, MagicMock
 
 from neuromosaic.cli import cli, DEFAULT_CONFIG
 from neuromosaic.utils.config import Config
@@ -21,22 +21,23 @@ def runner():
 @pytest.fixture
 def mock_orchestrator():
     """Mock the Orchestrator class."""
-    with patch("neuromosaic.cli.Orchestrator") as mock:
-        mock.return_value.run_batch = AsyncMock(
-            return_value=[
-                {
-                    "id": "test_arch_1",
-                    "results": {"accuracy": 0.95, "latency": 10.5},
-                    "config": {"layers": 4},
-                },
-                {
-                    "id": "test_arch_2",
-                    "results": {"accuracy": 0.85, "latency": 8.5},
-                    "config": {"layers": 3},
-                },
-            ]
-        )
-        yield mock
+    mock = MagicMock()
+    # Create a mock that returns a completed future
+    mock_coro = AsyncMock()
+    mock_coro.return_value = [
+        {
+            "id": "test_arch_1",
+            "metrics": {"accuracy": 0.95, "latency": 10.5},
+            "config": {"layers": 4},
+        },
+        {
+            "id": "test_arch_2",
+            "metrics": {"accuracy": 0.85, "latency": 8.5},
+            "config": {"layers": 3},
+        },
+    ]
+    mock.return_value.run_batch = mock_coro
+    return mock
 
 
 @pytest.fixture
@@ -83,34 +84,23 @@ def mock_analysis():
         }
 
 
-def run_async_command(runner, *args, **kwargs):
-    """Helper to run async commands in tests."""
-    with patch("neuromosaic.cli.asyncio.run") as mock_run:
-        result = runner.invoke(*args, **kwargs)
-        if mock_run.call_args:
-            # Execute the coroutine that was passed to asyncio.run
-            coro = mock_run.call_args[0][0]
-            try:
-                coro.send(None)  # Start the coroutine
-            except StopIteration:
-                pass
-        return result
-
-
-@pytest.mark.asyncio
-async def test_quickstart_command(runner, mock_orchestrator, tmp_path):
+def test_quickstart_command(runner, mock_orchestrator, tmp_path):
     """Test the quickstart command."""
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-        result = runner.invoke(cli, ["quickstart", "--output-dir", "test_output"])
+        with patch("neuromosaic.cli.Orchestrator", mock_orchestrator):
+            result = runner.invoke(cli, ["quickstart", "--output-dir", "test_output"])
 
-        assert result.exit_code == 0
-        assert "Starting quickstart architecture search..." in result.stdout
-        assert "Search completed!" in result.stdout
-        assert "Best architecture achieved" in result.stdout
+            assert result.exit_code == 0
+            assert "Starting quickstart architecture search..." in result.stdout
+            assert "Search completed successfully!" in result.stdout
+            assert "Best architecture achieved" in result.stdout
+
+            # Verify orchestrator was called correctly
+            mock_orchestrator.assert_called_once()
+            mock_orchestrator.return_value.run_batch.assert_called_once()
 
 
-@pytest.mark.asyncio
-async def test_experiment_command(runner, mock_orchestrator, tmp_path):
+def test_experiment_command(runner, mock_orchestrator, tmp_path):
     """Test the experiment command."""
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
         # Create a test config file
@@ -118,14 +108,61 @@ async def test_experiment_command(runner, mock_orchestrator, tmp_path):
         with open(config_path, "w") as f:
             yaml.dump(DEFAULT_CONFIG, f)
 
-        result = runner.invoke(
-            cli,
-            ["experiment", "--config", str(config_path), "--output-dir", "test_output"],
-        )
+        with patch("neuromosaic.cli.Orchestrator", mock_orchestrator):
+            result = runner.invoke(
+                cli,
+                [
+                    "experiment",
+                    "--config",
+                    str(config_path),
+                    "--output-dir",
+                    "test_output",
+                ],
+            )
 
-        assert result.exit_code == 0
-        assert "Starting experiment..." in result.stdout
-        assert "Experiment completed!" in result.stdout
+            assert result.exit_code == 0
+            assert "Starting new experiment..." in result.stdout
+            assert "Experiment completed successfully!" in result.stdout
+
+            # Verify orchestrator was called correctly
+            mock_orchestrator.assert_called_once()
+            mock_orchestrator.return_value.run_batch.assert_called_once()
+
+
+def test_quickstart_with_gpu_flag(runner, mock_orchestrator, tmp_path):
+    """Test quickstart command with GPU flag."""
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        with patch("neuromosaic.cli.Orchestrator", mock_orchestrator):
+            # Test CPU flag
+            result = runner.invoke(cli, ["quickstart", "--cpu"])
+            assert result.exit_code == 0
+            assert mock_orchestrator.return_value.run_batch.call_count == 1
+
+            # Test GPU flag
+            result = runner.invoke(cli, ["quickstart", "--gpu"])
+            assert result.exit_code == 0
+            assert mock_orchestrator.return_value.run_batch.call_count == 2
+
+
+def test_experiment_resume(runner, mock_orchestrator, tmp_path):
+    """Test experiment command with resume option."""
+    with runner.isolated_filesystem(temp_dir=tmp_path) as td:
+        config_path = Path(td) / "test_config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(DEFAULT_CONFIG, f)
+
+        with patch("neuromosaic.cli.Orchestrator", mock_orchestrator):
+            result = runner.invoke(
+                cli, ["experiment", "--config", str(config_path), "--resume"]
+            )
+
+            assert result.exit_code == 0
+            assert "Resuming previous experiment..." in result.stdout
+            assert "Experiment completed successfully!" in result.stdout
+
+            # Verify load_state was called
+            mock_orchestrator.return_value.load_state.assert_called_once()
+            mock_orchestrator.return_value.run_batch.assert_called_once()
 
 
 def test_analyze_command(runner, mock_results_db, mock_analysis, tmp_path):
@@ -184,17 +221,6 @@ def test_cli_help(runner):
         assert cmd in result.output.lower()
 
 
-@pytest.mark.asyncio
-async def test_quickstart_with_gpu_flag(runner, mock_orchestrator, tmp_path):
-    """Test quickstart command with GPU flag."""
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        result = runner.invoke(cli, ["quickstart", "--cpu"])
-        assert result.exit_code == 0
-
-        result = runner.invoke(cli, ["quickstart", "--gpu"])
-        assert result.exit_code == 0
-
-
 def test_analyze_with_comparison(runner, mock_results_db, mock_analysis, tmp_path):
     """Test analyze command with comparison option."""
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
@@ -211,20 +237,3 @@ def test_analyze_with_comparison(runner, mock_results_db, mock_analysis, tmp_pat
         assert result.exit_code == 0
         mock_analysis["compare"].assert_called_once()
         mock_analysis["display_compare"].assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_experiment_resume(runner, mock_orchestrator, tmp_path):
-    """Test experiment command with resume option."""
-    with runner.isolated_filesystem(temp_dir=tmp_path) as td:
-        config_path = Path(td) / "test_config.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(DEFAULT_CONFIG, f)
-
-        result = runner.invoke(
-            cli, ["experiment", "--config", str(config_path), "--resume"]
-        )
-
-        assert result.exit_code == 0
-        assert "Resuming previous experiment..." in result.stdout
-        assert "Experiment completed!" in result.stdout

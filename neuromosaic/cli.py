@@ -2,22 +2,68 @@
 """
 Command-line interface for Neuromosaic.
 
-Main workflow:
-    quickstart: Set up and run a basic architecture search with sensible defaults
-    
-Secondary workflows:
-    1. Custom experimentation: Fine-grained control over search parameters and training
-    2. Analysis: Deep inspection and visualization of results
+This module provides a command-line interface for running neural architecture search
+experiments using Neuromosaic. It supports both quick-start and customized experiments,
+along with tools for analysis and visualization.
 
-Example:
-    # Main workflow - Quick start
+Main Commands:
+    quickstart: Run a basic architecture search with sensible defaults
+        Options:
+            --output-dir: Directory to save results (default: neuromosaic_quickstart)
+            --cpu: Use CPU for training
+            --gpu: Use GPU for training
+            --batch-size: Number of parallel experiments (default: 5)
+    
+    experiment: Run a customized architecture search experiment
+        Options:
+            --config: Path to custom configuration file (required)
+            --output-dir: Directory to store results
+            --resume: Resume from previous run
+            --batch-size: Number of parallel experiments (default: 5)
+            --parallel/--sequential: Run experiments in parallel or sequentially
+
+    analyze: Deep inspection and visualization of results
+        Options:
+            results-dir: Path to results directory
+            --metric: Metric to analyze (default: accuracy)
+            --format: Output format (text/json/csv)
+            --compare-with: Compare with another results directory
+
+    inspect: Inspect specific architectures
+        Options:
+            architecture-id: ID of architecture to inspect
+            --export-code: Export architecture code
+            --detailed/--summary: Show detailed or summary metrics
+
+Example Usage:
+    # Quick start with default settings
     $ python -m neuromosaic quickstart
-    
-    # Secondary workflow 1 - Custom experimentation
-    $ python -m neuromosaic experiment --config custom_config.yaml
-    
-    # Secondary workflow 2 - Analysis
-    $ python -m neuromosaic analyze --results-dir path/to/results
+
+    # Quick start with GPU and parallel execution
+    $ python -m neuromosaic quickstart --gpu --batch-size 8
+
+    # Custom experiment with configuration
+    $ python -m neuromosaic experiment --config custom_config.yaml --parallel
+
+    # Resume previous experiment
+    $ python -m neuromosaic experiment --config config.yaml --resume
+
+    # Analyze results
+    $ python -m neuromosaic analyze results_dir --metric accuracy
+
+    # Compare experiments
+    $ python -m neuromosaic analyze results_dir --compare-with other_results
+
+    # Inspect specific architecture
+    $ python -m neuromosaic inspect arch_123 --detailed
+
+Implementation Notes:
+    - Commands that involve running experiments (quickstart, experiment) handle async
+      operations internally, no special handling needed by the user.
+    - The experiment command supports both parallel and sequential execution modes.
+    - Results are automatically saved and can be analyzed later using the analyze
+      and inspect commands.
+    - All commands support the --help option for detailed usage information.
 """
 
 import click
@@ -27,12 +73,14 @@ import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import shutil
+import uvicorn
 
 from neuromosaic.orchestrator import Orchestrator
-from neuromosaic.utils.config import Config
+from neuromosaic.utils.config import Config, LLMConfig
 from neuromosaic.utils.logging import setup_logger
 from neuromosaic.meta_learning.visualization import plot_results, save_plot
 from neuromosaic.results_db import ResultsDB
+from neuromosaic.api.config import get_api_settings
 
 logger = setup_logger(__name__)
 
@@ -58,6 +106,15 @@ DEFAULT_CONFIG = {
         "device": "cpu",
         "memory_limit": "8GB",
         "num_cpus": 4,
+    },
+    "llm": {
+        "provider": "openai",
+        "model": "gpt-4",
+        "temperature": 0.7,
+        "max_tokens": 2000,
+        "openai_api_key": None,  # Will be loaded from environment
+        "anthropic_api_key": None,  # Will be loaded from environment
+        "cohere_api_key": None,  # Will be loaded from environment
     },
 }
 
@@ -162,6 +219,122 @@ def cli(config: Optional[str], log_level: str):
     logging.getLogger().setLevel(log_level)
 
 
+def get_or_create_eventloop():
+    """Get the current event loop or create a new one if it doesn't exist."""
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
+
+
+async def _run_orchestrator(orchestrator, batch_size: int, parallel: bool = True):
+    """Run the orchestrator asynchronously."""
+    return await orchestrator.run_batch(batch_size=batch_size, parallel=parallel)
+
+
+async def _run_quickstart(
+    output_dir: str, cpu: bool = False, gpu: bool = False, batch_size: int = 5
+) -> None:
+    """Async implementation of quickstart command."""
+    try:
+        # Create output directory
+        output_dir_path = Path(output_dir)
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Create default config
+        config = DEFAULT_CONFIG.copy()
+        if cpu:
+            config["container"]["device"] = "cpu"
+        elif gpu:
+            config["container"]["device"] = "gpu"
+
+        # Save config
+        config_path = output_dir_path / "config.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
+
+        # Run experiment
+        config_obj = Config.from_env()  # Create config with environment variables
+        config_obj.load_config(config_path)  # Then load YAML config
+
+        # Create orchestrator and run batch
+        orchestrator = Orchestrator(config_obj)
+        results = await orchestrator.run_batch(batch_size=batch_size, parallel=True)
+
+        # Process results
+        if results:
+            best_result = max(results, key=lambda x: x["metrics"]["accuracy"])
+            click.echo("Search completed successfully!")
+            click.echo(f"Results saved in {output_dir}")
+            click.echo(
+                f"Best architecture achieved {best_result['metrics']['accuracy']:.2f}% accuracy"
+            )
+            click.echo(f"Total architectures evaluated: {len(results)}")
+        else:
+            click.echo("Search completed but no valid results were produced.")
+
+    except Exception as e:
+        logger.error(f"Error during quickstart: {str(e)}")
+        click.echo(f"Error during search: {str(e)}", err=True)
+        raise click.Abort()
+
+
+async def _run_experiment(
+    config: str,
+    output_dir: Optional[str],
+    resume: bool,
+    batch_size: int = 5,
+    parallel: bool = True,
+) -> None:
+    """Async implementation of experiment command."""
+    try:
+        # First load environment variables
+        config_obj = Config.from_env()
+        # Then merge with YAML config
+        config_obj.load_config(config)
+
+        if output_dir:
+            output_dir_path = Path(output_dir)
+            output_dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Create orchestrator
+        orchestrator = Orchestrator(config_obj)
+
+        if resume:
+            click.echo("Resuming previous experiment...")
+            # Load previous state if resuming
+            orchestrator.load_state()
+        else:
+            click.echo("Starting new experiment...")
+
+        # Run experiments
+        results = await orchestrator.run_batch(batch_size=batch_size, parallel=parallel)
+
+        # Process results
+        if results:
+            best_result = max(results, key=lambda x: x["metrics"]["accuracy"])
+            click.echo("Experiment completed successfully!")
+            click.echo(
+                f"Results saved in {output_dir if output_dir else 'default directory'}"
+            )
+            click.echo(
+                f"Best architecture achieved {best_result['metrics']['accuracy']:.2f}% accuracy"
+            )
+            click.echo(f"Total architectures evaluated: {len(results)}")
+
+            # Save final state
+            orchestrator.save_state()
+        else:
+            click.echo("Experiment completed but no valid results were produced.")
+
+    except Exception as e:
+        logger.error(f"Error during experiment: {str(e)}")
+        click.echo(f"Error during experiment: {str(e)}", err=True)
+        raise click.Abort()
+
+
 @cli.command()
 @click.option(
     "--output-dir",
@@ -170,34 +343,20 @@ def cli(config: Optional[str], log_level: str):
 )
 @click.option("--cpu", is_flag=True, help="Use CPU for training")
 @click.option("--gpu", is_flag=True, help="Use GPU for training")
-def quickstart(output_dir: str, cpu: bool = False, gpu: bool = False):
+@click.option(
+    "--batch-size", type=int, default=5, help="Number of parallel experiments"
+)
+def quickstart(
+    output_dir: str, cpu: bool = False, gpu: bool = False, batch_size: int = 5
+):
     """Quick start with default configuration."""
     click.echo("Starting quickstart architecture search...")
-
-    # Create output directory
-    output_dir_path = Path(output_dir)
-    output_dir_path.mkdir(parents=True, exist_ok=True)
-
-    # Create default config
-    config = DEFAULT_CONFIG.copy()
-    if cpu:
-        config["container"]["device"] = "cpu"
-    elif gpu:
-        config["container"]["device"] = "gpu"
-
-    # Save config
-    config_path = output_dir_path / "config.yaml"
-    with open(config_path, "w") as f:
-        yaml.dump(config, f)
-
-    # Run experiment
-    config_obj = Config()
-    config_obj.load_config(config_path)
-    orchestrator = Orchestrator(config_obj)
-
-    click.echo("Search completed!")
-    click.echo(f"Results saved in {output_dir}")
-    click.echo(f"Best architecture achieved 95% accuracy")
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_run_quickstart(output_dir, cpu, gpu, batch_size))
+    except RuntimeError:
+        # If no event loop exists, create one
+        asyncio.run(_run_quickstart(output_dir, cpu, gpu, batch_size))
 
 
 @cli.command()
@@ -209,23 +368,28 @@ def quickstart(output_dir: str, cpu: bool = False, gpu: bool = False):
 )
 @click.option("--output-dir", type=click.Path(), help="Directory to store results")
 @click.option("--resume/--no-resume", default=False, help="Resume from previous run")
-def experiment(config: str, output_dir: Optional[str], resume: bool):
+@click.option(
+    "--batch-size", type=int, default=5, help="Number of parallel experiments"
+)
+@click.option(
+    "--parallel/--sequential", default=True, help="Run experiments in parallel"
+)
+def experiment(
+    config: str,
+    output_dir: Optional[str],
+    resume: bool,
+    batch_size: int = 5,
+    parallel: bool = True,
+):
     """Run a customized architecture search experiment."""
-    config_obj = Config()
-    config_obj.load_config(config)
-
-    if output_dir:
-        output_dir_path = Path(output_dir)
-        output_dir_path.mkdir(parents=True, exist_ok=True)
-
-    orchestrator = Orchestrator(config_obj)
-    if resume:
-        click.echo("Resuming previous experiment...")
-    else:
-        click.echo("Starting experiment...")
-
-    click.echo("Experiment completed!")
-    click.echo(f"Results saved in {output_dir if output_dir else 'default directory'}")
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(
+            _run_experiment(config, output_dir, resume, batch_size, parallel)
+        )
+    except RuntimeError:
+        # If no event loop exists, create one
+        asyncio.run(_run_experiment(config, output_dir, resume, batch_size, parallel))
 
 
 @cli.command()
@@ -287,6 +451,57 @@ def inspect(architecture_id: str, export_code: bool, detailed: bool):
             click.echo(f"Architecture code exported to {code_path}")
     else:
         click.echo(f"No architecture found with ID {architecture_id}", err=True)
+
+
+@cli.command()
+@click.option("--host", default="0.0.0.0", help="Host to run the dashboard server on")
+@click.option(
+    "--port", default=8050, type=int, help="Port to run the dashboard server on"
+)
+@click.option(
+    "--debug/--no-debug", default=False, help="Run the dashboard in debug mode"
+)
+def dashboard(host: str, port: int, debug: bool):
+    """Launch the Neuromosaic dashboard visualization interface."""
+    from neuromosaic.frontend.dashboard import run_dashboard
+
+    click.echo(f"Starting dashboard server at http://{host}:{port}")
+    run_dashboard(host=host, port=port, debug=debug)
+
+
+@cli.command()
+@click.option(
+    "--host",
+    default=None,
+    help="Host to run the API server on (overrides config)",
+)
+@click.option(
+    "--port",
+    default=None,
+    type=int,
+    help="Port to run the API server on (overrides config)",
+)
+@click.option(
+    "--reload/--no-reload",
+    default=False,
+    help="Enable auto-reload for development",
+)
+def serve_api(host: Optional[str], port: Optional[int], reload: bool):
+    """Start the FastAPI server."""
+    settings = get_api_settings()
+
+    # Command line options override config
+    host = host or settings.api_host
+    port = port or settings.api_port
+
+    click.echo(f"Starting API server at http://{host}:{port}")
+    uvicorn.run(
+        "neuromosaic.api.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level="info",
+    )
 
 
 def main():

@@ -18,18 +18,58 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 import asyncio
 import logging
+from datetime import datetime
 
 from ..arch_space import ArchitectureVector
 from ..llm_code_gen import CodeGenerator
 from ..env_manager import ContainerManager
-from ..results_db import ResultsDB
+from ..results_db.db_interface import ResultsDB
+from ..results_db.db import ResultsDB as ResultsDBImpl
 from ..utils.logging import setup_logger
 from ..utils.version_control import VersionControl
+from .interface import IOrchestrator
+from .strategies import RandomSearch, BayesianOptimization
 
 logger = setup_logger(__name__)
 
+_orchestrator_instance: Optional[IOrchestrator] = None
 
-class Orchestrator:
+
+def get_orchestrator_instance(config: Optional[Dict[str, Any]] = None) -> IOrchestrator:
+    """
+    Get or create an orchestrator instance.
+
+    Args:
+        config: Optional configuration for the orchestrator
+
+    Returns:
+        IOrchestrator: Orchestrator interface instance
+    """
+    global _orchestrator_instance
+
+    if _orchestrator_instance is None:
+        if config is None:
+            # Create default config
+            config = {
+                "search_strategy": {
+                    "type": "random",
+                    "dimensions": 64,
+                },
+                "llm": {
+                    "provider": "openai",
+                    "model": "gpt-4",
+                },
+                "container": {
+                    "runtime": "docker",
+                    "device": "cpu",
+                },
+            }
+        _orchestrator_instance = Orchestrator(config)
+
+    return _orchestrator_instance
+
+
+class Orchestrator(IOrchestrator):
     """
     Manages the lifecycle of experiments: requests new architectures,
     triggers code generation, schedules training runs, and records results.
@@ -57,51 +97,43 @@ class Orchestrator:
         """
         self.config = config
         self._setup_components()
+        self._running_experiments: Dict[str, Dict[str, Any]] = {}
 
     def _setup_components(self) -> None:
         """Initialize all required components from configuration."""
         # Initialize search strategy
-        strategy_type = self.config._config.get("search_strategy", {}).get(
-            "type", "random"
-        )
-        if strategy_type == "random":
-            from .strategies import RandomSearch
-
-            self._search_strategy = RandomSearch(
-                self.config._config.get("search_strategy", {})
-            )
-        elif strategy_type == "bayesian_optimization":
-            from .strategies import BayesianOptimization
-
-            self._search_strategy = BayesianOptimization(
-                self.config._config.get("search_strategy", {})
-            )
+        if isinstance(self.config.search_strategy, RandomSearch):
+            self._search_strategy = self.config.search_strategy
+        elif isinstance(self.config.search_strategy, BayesianOptimization):
+            self._search_strategy = self.config.search_strategy
         else:
-            raise ValueError(f"Unknown search strategy type: {strategy_type}")
+            raise ValueError(
+                f"Unknown search strategy type: {type(self.config.search_strategy)}"
+            )
 
         # Initialize code generator if not already set (e.g. by tests)
         if not hasattr(self, "_code_generator"):
-            llm_config = self.config._config.get("llm", {})
-            provider = llm_config.get("provider", "openai")
-
-            if provider == "openai":
+            # Skip OpenAI initialization in development mode
+            if self.config.environment == "development":
+                self._code_generator = None
+            else:
                 from ..llm_code_gen.providers import OpenAICodeGenerator
 
-                self._code_generator = OpenAICodeGenerator(llm_config)
-            else:
-                raise ValueError(f"Unknown LLM provider: {provider}")
+                self._code_generator = OpenAICodeGenerator(self.config.llm)
 
         # Initialize container manager if not already set (e.g. by tests)
         if not hasattr(self, "_container_manager"):
-            container_config = self.config._config.get("container", {})
-            runtime = container_config.get("runtime", "docker")
+            from ..env_manager.providers import DockerContainerManager
 
-            if runtime == "docker":
-                from ..env_manager.providers import DockerContainerManager
+            self._container_manager = DockerContainerManager(self.config.container)
 
-                self._container_manager = DockerContainerManager(container_config)
-            else:
-                raise ValueError(f"Unknown container runtime: {runtime}")
+        # Initialize results DB if not already set
+        if not hasattr(self, "_results_db"):
+            self._results_db = ResultsDBImpl(self.config)
+
+        # Initialize version control if not already set
+        if not hasattr(self, "_version_control"):
+            self._version_control = VersionControl()
 
     @property
     def code_generator(self) -> CodeGenerator:
@@ -275,3 +307,88 @@ class Orchestrator:
                     results.append({"status": "failed", "error": str(e)})
 
         return results
+
+    def schedule_experiment(self, experiment_id: str) -> None:
+        """Implementation of IOrchestrator.schedule_experiment."""
+        if experiment_id in self._running_experiments:
+            raise ValueError(f"Experiment {experiment_id} is already running")
+
+        # Create experiment state
+        self._running_experiments[experiment_id] = {
+            "status": "scheduled",
+            "start_time": None,
+            "logs": [],
+        }
+
+        # Schedule the experiment to run asynchronously
+        asyncio.create_task(self._run_experiment(experiment_id))
+
+    def stop_experiment(self, experiment_id: str) -> None:
+        """Implementation of IOrchestrator.stop_experiment."""
+        if experiment_id not in self._running_experiments:
+            raise ValueError(f"Experiment {experiment_id} is not running")
+
+        # Update experiment state
+        self._running_experiments[experiment_id]["status"] = "stopping"
+        # TODO: Implement actual experiment stopping logic
+
+    def get_experiment_status(self, experiment_id: str) -> Dict[str, Any]:
+        """Implementation of IOrchestrator.get_experiment_status."""
+        if experiment_id not in self._running_experiments:
+            raise ValueError(f"Experiment {experiment_id} not found")
+
+        return self._running_experiments[experiment_id]
+
+    def list_running_experiments(self) -> List[str]:
+        """Implementation of IOrchestrator.list_running_experiments."""
+        return list(self._running_experiments.keys())
+
+    def get_experiment_logs(
+        self, experiment_id: str, start_time: Optional[str] = None
+    ) -> List[str]:
+        """Implementation of IOrchestrator.get_experiment_logs."""
+        if experiment_id not in self._running_experiments:
+            raise ValueError(f"Experiment {experiment_id} not found")
+
+        logs = self._running_experiments[experiment_id]["logs"]
+        if start_time:
+            start_dt = datetime.fromisoformat(start_time)
+            return [log for log in logs if log["timestamp"] > start_dt]
+        return logs
+
+    async def _run_experiment(self, experiment_id: str) -> None:
+        """
+        Internal method to run an experiment.
+
+        Args:
+            experiment_id: Unique identifier for the experiment
+        """
+        try:
+            # Update experiment state
+            self._running_experiments[experiment_id].update(
+                {
+                    "status": "running",
+                    "start_time": datetime.utcnow().isoformat(),
+                }
+            )
+
+            # Run the experiment cycle
+            results = await self.run_cycle()
+
+            # Update experiment state with success
+            self._running_experiments[experiment_id].update(
+                {
+                    "status": "completed",
+                    "results": results,
+                }
+            )
+
+        except Exception as e:
+            # Update experiment state with failure
+            self._running_experiments[experiment_id].update(
+                {
+                    "status": "failed",
+                    "error": str(e),
+                }
+            )
+            logger.error(f"Experiment {experiment_id} failed: {str(e)}")

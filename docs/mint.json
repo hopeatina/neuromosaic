@@ -1,0 +1,57 @@
+{
+  "name": "NeuroMosaic",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373"
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/yourusername/neuromosaic"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "guides/getting-started"
+  },
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": ["index", "quickstart"]
+    },
+    {
+      "group": "User Guides",
+      "pages": [
+        "guides/getting-started",
+        "guides/run-experiments",
+        "guides/visualize-results",
+        "guides/interpret-outcomes"
+      ]
+    },
+    {
+      "group": "Developer Documentation",
+      "pages": [
+        "developer/adding-architectures",
+        "developer/llm-providers",
+        "developer/fastapi-integration"
+      ]
+    },
+    {
+      "group": "Research & Theory",
+      "pages": [
+        "research/sphere-metaphor",
+        "research/meta-learning-insights",
+        "research/experiment-case-studies"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/yourusername/neuromosaic"
+  }
+}

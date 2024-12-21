@@ -147,3 +147,51 @@ Below is a high-level view of how all components interact:
       │ Evo Alg, etc.)       │
       └─────────────────────┘
 ```
+
+## Interactive Dashboard
+
+NeuraMosaic includes a powerful web-based dashboard for visualizing and interacting with the architecture search space. The dashboard provides real-time insights into experiments, architecture performance, and search progress.
+
+### Key Features
+
+- **3D Architecture Space Visualization**: Explore the architecture search space in an interactive 3D view, where each point represents an experiment. Points are color-coded by performance metrics.
+- **Real-time Experiment Monitoring**: Track ongoing experiments and view their progress in real-time.
+- **Detailed Architecture Analysis**: Click on any point to see detailed information about the architecture, including:
+  - Performance metrics (accuracy, loss, perplexity)
+  - Architecture components and structure
+  - Training history and evolution
+- **Experiment Control**: Launch new experiments directly from the dashboard with customized parameters.
+- **Metric Filtering & Comparison**: Filter and compare architectures based on different metrics and complexity measures.
+
+### Using the Dashboard
+
+1. Start the dashboard server:
+
+```bash
+python -m neuromosaic dashboard
+```
+
+2. Open your browser and navigate to `http://localhost:8050` (default port).
+
+3. The dashboard interface is organized into:
+
+   - Left sidebar: Controls for filtering and launching experiments
+   - Main view: 3D visualization of the architecture space
+   - Detail panel: Information about selected architectures
+
+4. Interact with the visualization:
+   - Rotate and zoom the 3D plot
+   - Click points to see architecture details
+   - Use filters to focus on specific metrics or complexity ranges
+   - Launch new experiments with the control panel
+
+### Technical Details
+
+The dashboard is built using:
+
+- Dash and Plotly for interactive visualizations
+- Bootstrap for responsive layout
+- FastAPI for backend communication
+- SQLAlchemy for database integration
+
+For more details on extending or customizing the dashboard, see the [Frontend Development Guide](docs/frontend.md).

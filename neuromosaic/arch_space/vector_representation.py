@@ -25,10 +25,54 @@ from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 from dataclasses import dataclass
 import logging
+from abc import ABC, abstractmethod
 
 from ..utils.logging import setup_logger
 
 logger = setup_logger(__name__)
+
+
+class IArchitectureEncoder(ABC):
+    """
+    Interface for architecture encoding and decoding.
+    This interface is used by the API to ensure consistent encoding/decoding behavior.
+    """
+
+    @abstractmethod
+    def encode(self, arch_spec: Dict[str, Any]) -> np.ndarray:
+        """
+        Encode an architecture specification into a vector.
+
+        Args:
+            arch_spec: Architecture specification dictionary
+
+        Returns:
+            np.ndarray: Vector representation of the architecture
+        """
+        pass
+
+    @abstractmethod
+    def decode(self, vector: np.ndarray) -> Dict[str, Any]:
+        """
+        Decode a vector back into an architecture specification.
+
+        Args:
+            vector: Vector representation of the architecture
+
+        Returns:
+            Dict[str, Any]: Architecture specification
+        """
+        pass
+
+    @abstractmethod
+    def get_dimensions(self) -> int:
+        """
+        Get the dimensionality of the vector space.
+
+        Returns:
+            int: Number of dimensions in the vector space
+        """
+        pass
 
 
 @dataclass

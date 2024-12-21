@@ -148,3 +148,6 @@ ray_results/
 !.gitkeep
 !README.md
 !requirements*.txt 
+
+# Quickstart
+neuromosaic_quickstart/

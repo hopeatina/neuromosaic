@@ -6,19 +6,58 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch, PropertyMock
 from typing import Dict, Any
 from dataclasses import dataclass
+from pathlib import Path
 
 from neuromosaic.orchestrator import Orchestrator
-from neuromosaic.arch_space import ArchitectureVector
+from neuromosaic.arch_space.vector_representation import ArchitectureVector, ArchSpace
 from neuromosaic.llm_code_gen import CodeGenerator
 from neuromosaic.env_manager import ContainerManager
+from neuromosaic.orchestrator.strategies import RandomSearch, BayesianOptimization
+from neuromosaic.utils.config import (
+    Config,
+    LLMConfig,
+    ContainerConfig,
+    StorageConfig,
+    DatabaseConfig,
+    MonitoringConfig,
+    SecurityConfig,
+    Training,
+)
 
 
-@dataclass
-class Config:
-    """Test configuration class."""
-
-    def __init__(self, config_dict: Dict[str, Any]):
-        self._config = config_dict
+@pytest.fixture
+def config() -> Config:
+    """Create a test configuration."""
+    config = Config(
+        llm=LLMConfig(openai_api_key="test-key"),
+        storage=StorageConfig(root=Path("data"), cache_size="50GB"),
+        database=DatabaseConfig(
+            host="localhost",
+            port=5432,
+            name="neuromosaic_test",
+            user="test_user",
+            password="test_pass",
+        ),
+        container=ContainerConfig(device="cpu", memory_limit="4g", num_cpus=4),
+        monitoring=MonitoringConfig(log_level="INFO"),
+        security=SecurityConfig(),
+        debug=False,
+        environment="development",
+        arch_space=ArchSpace(dimensions=64),
+        search_strategy=RandomSearch(
+            {"type": "random", "dimensions": 64, "num_trials": 10}
+        ),
+        training=Training(
+            batch_size=32,
+            max_epochs=10,
+            learning_rate=0.001,
+            optimizer="adam",
+            scheduler="cosine",
+        ),
+    )
+    # Add db_url for ResultsDB
+    setattr(config.database, "db_url", "sqlite:///neuromosaic_test.db")
+    return config
 
 
 @pytest.fixture
@@ -62,26 +101,6 @@ def mock_search_strategy(mock_arch_vector: Mock) -> Mock:
     # Add history property that supports len()
     type(strategy).history = PropertyMock(return_value=[])
     return strategy
-
-
-@pytest.fixture
-def config() -> Config:
-    """Create a test configuration."""
-    return Config(
-        {
-            "llm": {"provider": "openai", "api_key": "test-key", "model": "gpt-4"},
-            "search_strategy": {
-                "type": "random",
-                "params": {"population_size": 10, "mutation_rate": 0.1},
-            },
-            "container": {
-                "runtime": "docker",
-                "image": "python:3.9",
-                "gpu": False,
-                "memory_limit": "4g",
-            },
-        }
-    )
 
 
 @pytest.fixture

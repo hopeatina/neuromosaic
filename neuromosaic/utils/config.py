@@ -22,7 +22,7 @@ import yaml
 import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, List
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from dotenv import load_dotenv
 
 from ..arch_space.vector_representation import ArchSpace
@@ -35,7 +35,33 @@ load_dotenv()
 
 
 @dataclass
-class Training:
+class BaseConfig:
+    """Base configuration class that provides dictionary-style access."""
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get a configuration value by key, with an optional default.
+        Uses dataclasses.asdict() for dictionary-style access.
+
+        Args:
+            key: The configuration key to look up
+            default: The default value to return if key is not found
+
+        Returns:
+            The configuration value if found, otherwise the default value
+        """
+        try:
+            if "." in key:
+                section, subkey = key.split(".", 1)
+                section_dict = asdict(getattr(self, section))
+                return section_dict.get(subkey, default)
+            return asdict(self).get(key, default)
+        except (AttributeError, TypeError):
+            return default
+
+
+@dataclass
+class Training(BaseConfig):
     """Configuration for model training."""
 
     batch_size: int = field(default=32)
@@ -62,12 +88,16 @@ class Training:
 
 
 @dataclass
-class LLMConfig:
+class LLMConfig(BaseConfig):
     """Configuration for LLM providers."""
 
     openai_api_key: Optional[str] = field(default=None)
     anthropic_api_key: Optional[str] = field(default=None)
     cohere_api_key: Optional[str] = field(default=None)
+    provider: str = field(default="openai")
+    model: str = field(default="gpt-4")
+    temperature: float = field(default=0.7)
+    max_tokens: int = field(default=2000)
 
     @classmethod
     def from_env(cls) -> "LLMConfig":
@@ -76,11 +106,24 @@ class LLMConfig:
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
             cohere_api_key=os.getenv("COHERE_API_KEY"),
+            provider=os.getenv("LLM_PROVIDER", "openai"),
+            model=os.getenv("LLM_MODEL", "gpt-4"),
+            temperature=float(os.getenv("LLM_TEMPERATURE", "0.7")),
+            max_tokens=int(os.getenv("LLM_MAX_TOKENS", "2000")),
         )
+
+    def __post_init__(self):
+        """Validate LLM configuration."""
+        if self.provider not in ["openai", "anthropic", "cohere"]:
+            raise ConfigurationError(f"Invalid LLM provider: {self.provider}")
+        if self.temperature < 0 or self.temperature > 1:
+            raise ConfigurationError(f"Invalid temperature: {self.temperature}")
+        if self.max_tokens <= 0:
+            raise ConfigurationError(f"Invalid max_tokens: {self.max_tokens}")
 
 
 @dataclass
-class StorageConfig:
+class StorageConfig(BaseConfig):
     """Configuration for data and artifact storage."""
 
     root: Path = field(default=Path("data"))
@@ -98,7 +141,7 @@ class StorageConfig:
 
 
 @dataclass
-class DatabaseConfig:
+class DatabaseConfig(BaseConfig):
     """Configuration for database connection."""
 
     host: str = field(default="localhost")
@@ -106,6 +149,7 @@ class DatabaseConfig:
     name: str = field(default="neuromosaic")
     user: str = field(default="postgres")
     password: Optional[str] = field(default=None)
+    db_url: str = field(default="sqlite:///neuromosaic.db")
 
     @classmethod
     def from_env(cls) -> "DatabaseConfig":
@@ -116,11 +160,12 @@ class DatabaseConfig:
             name=os.getenv("DB_NAME", "neuromosaic"),
             user=os.getenv("DB_USER", "postgres"),
             password=os.getenv("DB_PASSWORD"),
+            db_url=os.getenv("DB_URL", "sqlite:///neuromosaic.db"),
         )
 
 
 @dataclass
-class ContainerConfig:
+class ContainerConfig(BaseConfig):
     """Configuration for container runtime."""
 
     device: str = field(default="cpu")
@@ -149,7 +194,7 @@ class ContainerConfig:
 
 
 @dataclass
-class MonitoringConfig:
+class MonitoringConfig(BaseConfig):
     """Configuration for monitoring and logging."""
 
     log_level: str = field(default="INFO")
@@ -171,7 +216,7 @@ class MonitoringConfig:
 
 
 @dataclass
-class SecurityConfig:
+class SecurityConfig(BaseConfig):
     """Configuration for security settings."""
 
     auth_secret_key: Optional[str] = field(default=None)
@@ -187,7 +232,7 @@ class SecurityConfig:
 
 
 @dataclass
-class Config:
+class Config(BaseConfig):
     """Main configuration class."""
 
     llm: LLMConfig = field(default_factory=LLMConfig)
@@ -213,6 +258,11 @@ class Config:
         )
     )
     training: Training = field(default_factory=Training)
+
+    def __post_init__(self):
+        """Initialize with environment variables if not already set."""
+        if not self.llm.openai_api_key:
+            self.llm = LLMConfig.from_env()
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -256,7 +306,22 @@ class Config:
 
             # Update each config section if present in YAML
             if "llm" in yaml_config:
+                # Merge with environment variables
+                env_llm = LLMConfig.from_env()
+                yaml_config["llm"]["openai_api_key"] = (
+                    yaml_config["llm"].get("openai_api_key") or env_llm.openai_api_key
+                )
+                yaml_config["llm"]["anthropic_api_key"] = (
+                    yaml_config["llm"].get("anthropic_api_key")
+                    or env_llm.anthropic_api_key
+                )
+                yaml_config["llm"]["cohere_api_key"] = (
+                    yaml_config["llm"].get("cohere_api_key") or env_llm.cohere_api_key
+                )
                 self.llm = LLMConfig(**yaml_config["llm"])
+            else:
+                # If no LLM config in YAML, use environment variables
+                self.llm = LLMConfig.from_env()
             if "storage" in yaml_config:
                 self.storage = StorageConfig(**yaml_config["storage"])
             if "database" in yaml_config:

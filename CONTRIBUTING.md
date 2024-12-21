@@ -55,26 +55,30 @@ This project follows a standard code of conduct. Please be respectful and profes
 
 ## Running Experiments
 
-Neuromosaic provides three main workflows for running and analyzing architecture searches:
+Neuromosaic provides several commands for running and analyzing architecture searches:
 
-### 1. Quick Start (Main Workflow)
+### 1. Quick Start
 
 For a quick start with sensible defaults:
 
 ```bash
-# Start a basic architecture search
+# Basic architecture search
 python -m neuromosaic quickstart
 
-# Customize output directory and hardware
-python -m neuromosaic quickstart --output-dir my_search --cpu
+# With GPU and parallel execution
+python -m neuromosaic quickstart --gpu --batch-size 8
+
+# Customize output directory and use CPU
+python -m neuromosaic quickstart --output-dir my_search --cpu --batch-size 4
 ```
 
-This will:
+The quickstart command:
 
-- Create an output directory with a default configuration
-- Run architecture search with proven defaults
-- Generate basic visualizations
-- Show a summary of the best results
+- Creates an output directory with a default configuration
+- Runs architecture search with proven defaults
+- Supports parallel execution with configurable batch size
+- Automatically handles async operations
+- Shows a summary of the best results
 
 ### 2. Custom Experimentation
 
@@ -92,39 +96,64 @@ For more control over the search process:
    search_strategy:
      type: "bayesian_optimization"
      num_trials: 10
+     dimensions: 64
 
    training:
      batch_size: 32
      max_epochs: 5
+     learning_rate: 0.001
+     optimizer: "adam"
+     scheduler: "cosine"
+     metrics: ["accuracy", "loss", "latency", "memory_usage"]
+
+   container:
+     device: "cpu" # or "gpu"
+     memory_limit: "8GB"
+     num_cpus: 4
    ```
 
 2. Run the experiment:
 
    ```bash
-   # Run with custom configuration
-   python -m neuromosaic experiment --config custom_config.yaml --output-dir custom_search
+   # Run with custom configuration in parallel
+   python -m neuromosaic experiment --config custom_config.yaml --output-dir custom_search --batch-size 8
+
+   # Run sequentially
+   python -m neuromosaic experiment --config custom_config.yaml --sequential
 
    # Resume a previous run
    python -m neuromosaic experiment --config custom_config.yaml --resume
    ```
+
+The experiment command supports:
+
+- Parallel or sequential execution
+- Configurable batch size for parallel runs
+- State saving and resumption
+- Custom output directory
+- Automatic async operation handling
 
 ### 3. Analysis and Visualization
 
 Analyze and compare experiment results:
 
 ```bash
-# Basic analysis of results
-python -m neuromosaic analyze results_dir
+# Basic analysis with specific metric
+python -m neuromosaic analyze results_dir --metric accuracy
 
-# Compare two experiments
-python -m neuromosaic analyze results_dir --compare-with other_results_dir
+# Compare two experiments with custom format
+python -m neuromosaic analyze results_dir --compare-with other_results --format json
 
-# Export results in different formats
-python -m neuromosaic analyze results_dir --format json
-
-# Inspect a specific architecture
+# Detailed inspection of specific architecture
 python -m neuromosaic inspect <architecture-id> --detailed --export-code
 ```
+
+Analysis features:
+
+- Multiple output formats (text, JSON, CSV)
+- Comparison between experiments
+- Detailed metrics visualization
+- Code export for specific architectures
 
 ### Additional Options
 
@@ -134,7 +163,7 @@ python -m neuromosaic inspect <architecture-id> --detailed --export-code
   python -m neuromosaic --log-level DEBUG quickstart
   ```
 
-- All commands support `--help` for detailed usage information:
+- All commands support `--help` for detailed usage:
   ```bash
   python -m neuromosaic quickstart --help
   python -m neuromosaic experiment --help
@@ -142,7 +171,7 @@ python -m neuromosaic inspect <architecture-id> --detailed --export-code
   python -m neuromosaic inspect --help
   ```
 
-The experiment results are stored in the output directory and can be analyzed using the analysis commands above.
+The experiment results are stored in the output directory and can be analyzed using the analysis commands. All async operations are handled internally by the commands, making the interface simple and user-friendly.
 
 ## Making Changes
 
