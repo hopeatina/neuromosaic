@@ -8,10 +8,10 @@ It coordinates between different components:
 - Schedules training runs in containers
 - Records and analyzes results
 
-Example:
-    >>> config = Config()
-    >>> orchestrator = Orchestrator(config)
-    >>> orchestrator.run_cycle()  # Runs one complete search cycle
+Improvements:
+- Enhanced error handling and logging
+- Resilient concurrency in run_batch
+- Strict checks on missing fields or invalid returns
 """
 
 from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
@@ -24,7 +24,6 @@ from dataclasses import asdict
 from ..arch_space import ArchitectureVector
 from ..llm_code_gen import CodeGenerator
 from ..env_manager import ContainerManager
-from ..results_db.db_interface import ResultsDB
 from ..results_db.db import ResultsDB as ResultsDBImpl
 from ..utils.logging import setup_logger
 from ..utils.version_control import VersionControl
@@ -44,29 +43,33 @@ def get_orchestrator_instance(
     config: Optional[Union[Dict[str, Any], "Config"]] = None
 ) -> IOrchestrator:
     """
-    Get or create an orchestrator instance.
+    Get or create a global orchestrator instance (singleton pattern).
 
     Args:
-        config: Optional configuration for the orchestrator. Can be either a Config instance or a dict.
+        config: Optional configuration for the orchestrator (dict or Config object).
 
     Returns:
-        IOrchestrator: Orchestrator interface instance
+        IOrchestrator: The orchestrator interface instance.
+
+    Notes:
+        - If config is None, we load default config from environment.
+        - If config is a dict, we create a base config from environment and potentially
+          merge the dict (skipped in this minimal example).
     """
     global _orchestrator_instance
 
     if _orchestrator_instance is None:
         if config is None:
-            # Create default config using Config.from_env()
             from ..utils.config import Config
 
             config = Config.from_env()
         elif isinstance(config, dict):
-            # Convert dict to Config instance
             from ..utils.config import Config
 
             base_config = Config.from_env()
-            # TODO: Implement proper merging of config dict with base config
+            # TODO: merge config dict with base_config if desired
             config = base_config
+
         _orchestrator_instance = Orchestrator(config)
 
     return _orchestrator_instance
@@ -77,18 +80,14 @@ class Orchestrator(IOrchestrator):
     Manages the lifecycle of experiments: requests new architectures,
     triggers code generation, schedules training runs, and records results.
 
-    The orchestrator implements the main control loop of the architecture search:
-    1. Get next architecture from search strategy
-    2. Generate code via LLM
-    3. Run experiment in container
-    4. Record results and update search strategy
+    Steps in the main loop:
+        1) get_next_architecture() from search strategy
+        2) generate_code() via LLM provider
+        3) run experiment in container
+        4) record results, update strategy
 
     Attributes:
-        config (Config): Configuration object containing:
-            - search_strategy: Strategy class name or instance
-            - llm_provider: LLM provider configuration
-            - container_config: Container runtime settings
-            - experiment_defaults: Default training parameters
+        config (Config): Configuration object with search_strategy, llm, container, etc.
     """
 
     def __init__(self, config: "Config"):
@@ -96,24 +95,32 @@ class Orchestrator(IOrchestrator):
         Initialize the orchestrator with configuration.
 
         Args:
-            config: Configuration object with all necessary settings
+            config: Configuration object with all necessary settings.
         """
         self.config = config
         self._setup_components()
+        # Track actively running or scheduled experiments
         self._running_experiments: Dict[str, Dict[str, Any]] = {}
 
     def _setup_components(self) -> None:
-        """Initialize all required components from configuration."""
-        # Import strategies here to avoid circular imports
+        """
+        Initialize all required components from configuration:
+        - search_strategy
+        - code_generator
+        - container_manager
+        - results DB
+        - version control
+
+        Uses lazy imports to avoid circular dependencies.
+        """
         from .strategies import RandomSearch, BayesianOptimization
 
-        # Initialize search strategy
-        if isinstance(self.config.search_strategy, RandomSearch):
-            self._search_strategy = self.config.search_strategy
-        elif isinstance(self.config.search_strategy, BayesianOptimization):
+        # 1. Search Strategy
+        if isinstance(
+            self.config.search_strategy, (RandomSearch, BayesianOptimization)
+        ):
             self._search_strategy = self.config.search_strategy
         else:
-            # Create search strategy instance based on config
             strategy_config = self.config.search_strategy
             strategy_type = strategy_config.get("type", "bayesian_optimization")
 
@@ -124,146 +131,148 @@ class Orchestrator(IOrchestrator):
             else:
                 raise ValueError(f"Unknown search strategy type: {strategy_type}")
 
-        # Initialize code generator if not already set (e.g. by tests)
+        # 2. Code Generator
         if not hasattr(self, "_code_generator"):
-            if self.config.environment == "development":
-                # Use mock generator in development mode
-                from ..llm_code_gen.providers import MockCodeGenerator
+            from ..llm_code_gen.providers import (
+                MockCodeGenerator,
+                OpenAICodeGenerator,
+                LlamaCodeGenerator,
+            )
 
-                self._code_generator = MockCodeGenerator(asdict(self.config.llm))
+            if self.config.environment == "development":
+                # Use a mock generator in dev mode
+                self._code_generator = LlamaCodeGenerator(asdict(self.config.llm))
             else:
-                # Initialize real provider based on config
                 provider = self.config.llm.get("provider", "openai")
                 if provider == "openai":
-                    from ..llm_code_gen.providers import OpenAICodeGenerator
-
                     self._code_generator = OpenAICodeGenerator(asdict(self.config.llm))
                 elif provider == "llama":
-                    from ..llm_code_gen.providers import LlamaCodeGenerator
-
                     self._code_generator = LlamaCodeGenerator(asdict(self.config.llm))
                 else:
                     raise ValueError(f"Unknown LLM provider: {provider}")
-
             logger.info(
                 "Initialized code generator: %s",
                 self._code_generator.__class__.__name__,
             )
 
-        # Initialize container manager if not already set (e.g. by tests)
+        # 3. Container Manager
         if not hasattr(self, "_container_manager"):
             from ..env_manager.providers import DockerContainerManager
 
             self._container_manager = DockerContainerManager(self.config.container)
 
-        # Initialize results DB if not already set
+        # 4. Results DB
         if not hasattr(self, "_results_db"):
             self._results_db = ResultsDBImpl(self.config)
 
-        # Initialize version control if not already set
+        # 5. Version Control
         if not hasattr(self, "_version_control"):
             self._version_control = VersionControl()
 
     @property
     def code_generator(self) -> CodeGenerator:
-        """Get the code generator instance."""
+        """Returns the code generator instance."""
         return self._code_generator
 
     @code_generator.setter
     def code_generator(self, generator: CodeGenerator) -> None:
-        """Set the code generator instance."""
+        """Sets the code generator instance."""
         self._code_generator = generator
 
     @property
     def container_manager(self) -> ContainerManager:
-        """Get the container manager instance."""
+        """Returns the container manager instance."""
         return self._container_manager
 
     @container_manager.setter
     def container_manager(self, manager: ContainerManager) -> None:
-        """Set the container manager instance."""
+        """Sets the container manager instance."""
         self._container_manager = manager
 
     async def run_cycle(self) -> Dict[str, Any]:
         """
         Run a single cycle of the neural architecture search.
 
-        A cycle consists of:
-        1. Getting next architecture to evaluate
-        2. Generating implementation code
-        3. Running the experiment
-        4. Recording results
+        Steps:
+            1) get_next_architecture()
+            2) generate_code()
+            3) create & run container
+            4) store results, update strategy
 
         Returns:
-            Dict containing cycle results including:
-            - architecture_id: Unique identifier for the architecture
-            - metrics: Performance metrics from training
-            - code_version: Git commit hash of generated code
+            Dictionary with keys:
+                - architecture_id
+                - metrics
+                - code_version
+                - arch_spec
 
         Raises:
-            RuntimeError: If any component fails critically
+            RuntimeError: If any sub-step fails.
         """
         try:
-            # Get next architecture
-            arch_info = await self.get_next_architecture()
+            arch_info = await self.get_next_architecture()  # step 1
             arch_vector = arch_info["vector"]
             arch_spec = arch_vector.decode()
 
-            # Generate code
+            # Generate code (step 2)
             code = await self._code_generator.generate_code(arch_spec)
 
-            # Save code and get version
+            # Commit code to version control
             code_version = await self._version_control.commit_code(code)
 
-            # Create and run container
-            container_id = await self._container_manager.create_container(code)
+            # Create container (step 3)
+            container_spec = {
+                "code": code,
+                # Potentially add "requirements" or "data_path"
+                # or environment overrides if needed
+            }
+            container_id = await self._container_manager.create_container(
+                container_spec
+            )
+
             try:
                 run_results = await self._container_manager.run_container(container_id)
                 if run_results["status"] != "success":
+                    # We consider this a critical error
                     raise RuntimeError(f"Container run failed: {run_results}")
 
-                # Process and store results
-                metrics = run_results["results"]
+                # Step 4: process results
+                metrics = run_results.get("results", {})
                 architecture_id = f"arch_{code_version[:8]}"
 
-                results = {
+                final_results = {
                     "architecture_id": architecture_id,
                     "metrics": metrics,
                     "code_version": code_version,
                     "arch_spec": arch_spec,
                 }
-
-                await self.submit_results(results)
-                return results
+                await self.submit_results(final_results)
+                return final_results
 
             finally:
-                # Always cleanup container
+                # Always attempt to clean up container
                 await self._container_manager.cleanup_container(container_id)
 
         except Exception as e:
-            logger.error(f"Cycle failed: {str(e)}")
+            logger.error(f"run_cycle failed: {e}")
             raise
 
     async def get_next_architecture(self) -> Dict[str, Any]:
         """
-        Get the next architecture to evaluate from the search strategy.
+        Retrieves the next architecture to evaluate from the search strategy.
 
         Returns:
-            Dict containing:
-            - vector: The architecture vector
-            - metadata: Any strategy-specific metadata
+            A dictionary with:
+                - vector: ArchitectureVector
+                - metadata: dict with strategy name, iteration, etc.
 
         Raises:
-            ValueError: If strategy returns invalid architecture
+            ValueError: If the strategy returns an invalid type (not ArchitectureVector).
         """
-        # Get next architecture from search strategy
         arch_vector = await self._search_strategy.suggest_architecture()
-
-        # Validate the architecture
         if not isinstance(arch_vector, ArchitectureVector):
             raise ValueError("Strategy returned invalid architecture type")
 
-        # Return with optional metadata
         return {
             "vector": arch_vector,
             "metadata": {
@@ -276,148 +285,186 @@ class Orchestrator(IOrchestrator):
         """
         Submit results from a completed experiment.
 
-        Args:
-            results: Dictionary containing:
-                - architecture_id: ID of the evaluated architecture
-                - metrics: Dictionary of performance metrics
-                - training_time: Time taken for training
-                - resource_usage: CPU/GPU/memory usage stats
+        Required fields in 'results':
+            - architecture_id
+            - metrics
+
+        Steps:
+            1) Save run info to DB
+            2) Update search strategy with results
+            3) Log outcome
+
+        Raises:
+            ValueError: If required fields are missing.
+            Any DB or search strategy exceptions that might bubble up.
         """
-        # Validate required fields
         required_fields = ["architecture_id", "metrics"]
         for field in required_fields:
             if field not in results:
-                raise ValueError(f"Missing required field in results: {field}")
+                raise ValueError(f"submit_results: missing required field '{field}'")
 
-        # Store results in database
+        # Persist results
         await self._results_db.save_run_info(results)
 
-        # Update search strategy with results
+        # Update search strategy with outcome
         await self._search_strategy.update_with_results(results)
 
-        # Log results summary
-        logger.info(f"Stored results for architecture {results['architecture_id']}")
+        # Logging
+        logger.info(f"Submitted results for {results['architecture_id']}")
         logger.info(f"Metrics: {results['metrics']}")
 
     async def run_batch(
         self, batch_size: int, parallel: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Run multiple architecture evaluations in parallel.
+        Run multiple architecture evaluations in batch.
 
         Args:
-            batch_size: Number of architectures to evaluate
-            parallel: If True, run evaluations concurrently
+            batch_size (int): Number of architectures to evaluate
+            parallel (bool): If True, run all cycles concurrently.
+                             If False, run them sequentially.
 
         Returns:
-            List of results from each evaluation
+            A list of results dictionaries. Each element may be either:
+                - A successful results dict from run_cycle(), or
+                - A dict with status="failed" and an "error" message
+                  if that particular cycle failed.
+
+        Notes:
+            - Even if parallel=True, some tasks might fail while others succeed.
         """
-        # Create tasks for each evaluation
         tasks = [self.run_cycle() for _ in range(batch_size)]
 
         if parallel:
-            # Run evaluations concurrently
+            # Run concurrently
             results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            # Handle any exceptions
-            for i, result in enumerate(results):
-                if isinstance(result, Exception):
-                    logger.error(f"Batch task {i} failed: {str(result)}")
-                    results[i] = {"status": "failed", "error": str(result)}
+            for i, r in enumerate(results):
+                if isinstance(r, Exception):
+                    logger.error(f"Parallel run {i} failed: {r}")
+                    results[i] = {"status": "failed", "error": str(r)}
+            return results
         else:
-            # Run evaluations sequentially
-            results = []
+            # Run sequentially to avoid partial failures messing concurrency
+            aggregated = []
             for i, task in enumerate(tasks):
                 try:
-                    result = await task
-                    results.append(result)
+                    res = await task
+                    aggregated.append(res)
                 except Exception as e:
-                    logger.error(f"Batch task {i} failed: {str(e)}")
-                    results.append({"status": "failed", "error": str(e)})
-
-        return results
+                    logger.error(f"Sequential run {i} failed: {e}")
+                    aggregated.append({"status": "failed", "error": str(e)})
+            return aggregated
 
     def schedule_experiment(self, experiment_id: str) -> None:
-        """Implementation of IOrchestrator.schedule_experiment."""
-        if experiment_id in self._running_experiments:
-            raise ValueError(f"Experiment {experiment_id} is already running")
+        """
+        Schedule an experiment asynchronously, tracking status in self._running_experiments.
 
-        # Create experiment state
+        Args:
+            experiment_id (str): Unique identifier for the scheduled experiment.
+
+        Raises:
+            ValueError: If experiment is already running or scheduled.
+        """
+        if experiment_id in self._running_experiments:
+            raise ValueError(
+                f"Experiment {experiment_id} is already running or scheduled"
+            )
+
         self._running_experiments[experiment_id] = {
             "status": "scheduled",
             "start_time": None,
             "logs": [],
         }
 
-        # Schedule the experiment to run asynchronously
         asyncio.create_task(self._run_experiment(experiment_id))
 
-    def stop_experiment(self, experiment_id: str) -> None:
-        """Implementation of IOrchestrator.stop_experiment."""
-        if experiment_id not in self._running_experiments:
-            raise ValueError(f"Experiment {experiment_id} is not running")
+    async def _run_experiment(self, experiment_id: str) -> None:
+        """
+        Internal method to run a scheduled experiment.
+        Updates the experiment's status as it goes.
 
-        # Update experiment state
+        Args:
+            experiment_id: The ID of the experiment to run.
+
+        Raises:
+            Exceptions bubble up but are caught to mark experiment as failed in state.
+        """
+        try:
+            self._running_experiments[experiment_id]["status"] = "running"
+            self._running_experiments[experiment_id][
+                "start_time"
+            ] = datetime.utcnow().isoformat()
+
+            result = await self.run_cycle()
+
+            self._running_experiments[experiment_id]["status"] = "completed"
+            self._running_experiments[experiment_id]["results"] = result
+
+        except Exception as e:
+            self._running_experiments[experiment_id]["status"] = "failed"
+            self._running_experiments[experiment_id]["error"] = str(e)
+            logger.error(f"Experiment {experiment_id} failed: {e}")
+
+    def stop_experiment(self, experiment_id: str) -> None:
+        """
+        Mark experiment as stopping (TODO: actual container or job cancellation).
+
+        Args:
+            experiment_id: ID of the experiment.
+
+        Raises:
+            ValueError: If experiment is not found in _running_experiments.
+        """
+        if experiment_id not in self._running_experiments:
+            raise ValueError(f"Experiment {experiment_id} is not running or scheduled")
+
         self._running_experiments[experiment_id]["status"] = "stopping"
-        # TODO: Implement actual experiment stopping logic
+        # TODO: implement actual container/job stop logic if feasible
 
     def get_experiment_status(self, experiment_id: str) -> Dict[str, Any]:
-        """Implementation of IOrchestrator.get_experiment_status."""
+        """
+        Retrieve the current status of a running or scheduled experiment.
+
+        Args:
+            experiment_id: ID of the experiment.
+
+        Returns:
+            A dictionary with keys like 'status', 'start_time', 'results', 'error', etc.
+
+        Raises:
+            ValueError: If the experiment ID is unknown.
+        """
         if experiment_id not in self._running_experiments:
             raise ValueError(f"Experiment {experiment_id} not found")
-
         return self._running_experiments[experiment_id]
 
     def list_running_experiments(self) -> List[str]:
-        """Implementation of IOrchestrator.list_running_experiments."""
+        """
+        List all experiment IDs currently tracked (running or scheduled).
+
+        Returns:
+            A list of experiment IDs.
+        """
         return list(self._running_experiments.keys())
 
     def get_experiment_logs(
         self, experiment_id: str, start_time: Optional[str] = None
     ) -> List[str]:
-        """Implementation of IOrchestrator.get_experiment_logs."""
+        """
+        Fetch logs for a given experiment from the local tracking dictionary.
+
+        Args:
+            experiment_id: ID of the experiment
+            start_time: If provided, only return logs after that timestamp.
+
+        Returns:
+            A list of log entries (strings).
+        """
         if experiment_id not in self._running_experiments:
             raise ValueError(f"Experiment {experiment_id} not found")
 
         logs = self._running_experiments[experiment_id]["logs"]
         if start_time:
-            start_dt = datetime.fromisoformat(start_time)
-            return [log for log in logs if log["timestamp"] > start_dt]
+            dt = datetime.fromisoformat(start_time)
+            return [l for l in logs if l["timestamp"] > dt]
         return logs
-
-    async def _run_experiment(self, experiment_id: str) -> None:
-        """
-        Internal method to run an experiment.
-
-        Args:
-            experiment_id: Unique identifier for the experiment
-        """
-        try:
-            # Update experiment state
-            self._running_experiments[experiment_id].update(
-                {
-                    "status": "running",
-                    "start_time": datetime.utcnow().isoformat(),
-                }
-            )
-
-            # Run the experiment cycle
-            results = await self.run_cycle()
-
-            # Update experiment state with success
-            self._running_experiments[experiment_id].update(
-                {
-                    "status": "completed",
-                    "results": results,
-                }
-            )
-
-        except Exception as e:
-            # Update experiment state with failure
-            self._running_experiments[experiment_id].update(
-                {
-                    "status": "failed",
-                    "error": str(e),
-                }
-            )
-            logger.error(f"Experiment {experiment_id} failed: {str(e)}")

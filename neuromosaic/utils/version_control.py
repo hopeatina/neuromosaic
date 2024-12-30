@@ -5,12 +5,22 @@ Version control utilities for tracking experiment code versions.
 from typing import Dict, Any, Optional
 import subprocess
 from pathlib import Path
+import logging
+import tempfile
+import os
+
+logger = logging.getLogger(__name__)
 
 
 class VersionControl:
     """
     Utilities for version control operations.
     """
+
+    def __init__(self, code_dir: Optional[str] = None):
+        """Initialize with optional code directory."""
+        self.code_dir = code_dir or "generated_code"
+        os.makedirs(self.code_dir, exist_ok=True)
 
     @staticmethod
     def get_current_commit() -> str:
@@ -38,3 +48,30 @@ class VersionControl:
         subprocess.run(["git", "commit", "-m", message])
 
         return VersionControl.get_current_commit()
+
+    async def commit_code(self, code: str) -> str:
+        """
+        Save and commit generated code.
+
+        Args:
+            code: The generated code to commit
+
+        Returns:
+            str: The commit hash of the saved code
+
+        Raises:
+            RuntimeError: If git operations fail
+        """
+        try:
+            # Create a unique filename
+            filename = f"model_{self.get_current_commit()[:8]}.py"
+            filepath = os.path.join(self.code_dir, filename)
+
+            # Save and commit the code
+            return self.save_code_snapshot(
+                code, filepath, message=f"Generated model code: {filename}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to commit code: {str(e)}")
+            raise RuntimeError(f"Failed to commit code: {str(e)}")

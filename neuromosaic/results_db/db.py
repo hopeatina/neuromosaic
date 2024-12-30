@@ -1,14 +1,19 @@
 """
-Implementation of the results database interface.
+Implementation of the results database interface using SQLAlchemy.
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-import sqlite3
 import json
+import logging
+from sqlalchemy import create_engine, or_
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.dialects.sqlite import insert
 
 from .db_interface import ResultsDB as BaseResultsDB
+from .models import Base, Architecture, Experiment, Run
 
+logger = logging.getLogger(__name__)
 
 _db_instance: Optional[BaseResultsDB] = None
 
@@ -34,50 +39,26 @@ def get_db_instance(config: Optional[Dict[str, Any]] = None) -> BaseResultsDB:
 
 
 class ResultsDB(BaseResultsDB):
-    """Implementation of the results database interface."""
+    """Implementation of the results database interface using SQLAlchemy."""
 
     def __init__(self, config: Dict[str, Any]):
         """Initialize the results database."""
         super().__init__(config)
-        # Get database configuration, either from Config object or dict
+        # Get database configuration
         if hasattr(config, "database"):
             db_config = config.database
-            self.db_path = db_config.db_url.replace("sqlite:///", "")
+            self.db_url = db_config.db_url
         else:
             db_config = config.get("database", {})
-            self.db_path = db_config.get("db_url", "sqlite:///results.db").replace(
-                "sqlite:///", ""
-            )
-        self._init_db()
+            self.db_url = db_config.get("db_url", "sqlite:///results.db")
 
-    def _init_db(self):
-        """Initialize the database schema."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS experiments (
-                    id TEXT PRIMARY KEY,
-                    status TEXT,
-                    start_time TEXT,
-                    end_time TEXT,
-                    config TEXT
-                )
-            """
-            )
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS runs (
-                    id TEXT PRIMARY KEY,
-                    experiment_id TEXT,
-                    architecture_id TEXT,
-                    metrics TEXT,
-                    timestamp TEXT,
-                    FOREIGN KEY (experiment_id) REFERENCES experiments(id)
-                )
-            """
-            )
-            conn.commit()
+        self.engine = create_engine(self.db_url, echo=False)
+        self.Session = sessionmaker(bind=self.engine)
+        Base.metadata.create_all(self.engine)
+
+    def _get_session(self) -> Session:
+        """Get a new database session."""
+        return self.Session()
 
     async def list_all_runs(
         self,
@@ -86,202 +67,146 @@ class ResultsDB(BaseResultsDB):
         **filters,
     ) -> List[Dict[str, Any]]:
         """List all runs in the database."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            query = "SELECT * FROM runs"
-            conditions = []
-            params = []
+        with self._get_session() as session:
+            query = session.query(Run)
 
             if start_date:
-                conditions.append("timestamp >= ?")
-                params.append(start_date)
+                query = query.filter(Run.timestamp >= start_date)
             if end_date:
-                conditions.append("timestamp <= ?")
-                params.append(end_date)
+                query = query.filter(Run.timestamp <= end_date)
 
             for key, value in filters.items():
-                conditions.append(f"{key} = ?")
-                params.append(value)
+                if hasattr(Run, key):
+                    query = query.filter(getattr(Run, key) == value)
 
-            if conditions:
-                query += " WHERE " + " AND ".join(conditions)
-
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-            runs = []
-            for row in rows:
-                run = {
-                    "id": row[0],
-                    "experiment_id": row[1],
-                    "architecture_id": row[2],
-                    "metrics": json.loads(row[3]),
-                    "timestamp": row[4],
+            runs = query.all()
+            return [
+                {
+                    "id": run.id,
+                    "experiment_id": run.experiment_id,
+                    "architecture_id": run.architecture_id,
+                    "metrics": json.loads(run.metrics) if run.metrics else {},
+                    "timestamp": run.timestamp.isoformat() if run.timestamp else None,
                 }
-                runs.append(run)
-            return runs
+                for run in runs
+            ]
 
     async def get_best_architectures(
         self, metric: str, limit: int = 10, **filters
     ) -> List[Dict[str, Any]]:
         """Get the best architectures based on a metric."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            query = """
-                SELECT architecture_id, metrics
-                FROM runs
-            """
-            conditions = []
-            params = []
+        # Get all runs that match filters
+        all_runs = await self.list_all_runs(**filters)
 
-            for key, value in filters.items():
-                conditions.append(f"{key} = ?")
-                params.append(value)
+        # Filter out runs that have that metric and ensure it's numeric
+        valid_runs = []
+        for run in all_runs:
+            val = run["metrics"].get(metric)
+            if isinstance(val, (int, float)):
+                valid_runs.append(run)
 
-            if conditions:
-                query += " WHERE " + " AND ".join(conditions)
+        # Sort descending by the metric
+        valid_runs.sort(key=lambda r: r["metrics"][metric], reverse=True)
 
-            query += f" ORDER BY json_extract(metrics, '$.{metric}') DESC LIMIT ?"
-            params.append(limit)
-
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-            return [
-                {"architecture_id": row[0], "metrics": json.loads(row[1])}
-                for row in rows
-            ]
+        # Return top N
+        best = valid_runs[:limit]
+        return [
+            {"architecture_id": run["architecture_id"], "metrics": run["metrics"]}
+            for run in best
+        ]
 
     async def save_run_info(self, run_info: Dict[str, Any]) -> str:
         """Save run information to the database."""
         run_id = run_info.get("id", str(datetime.now().timestamp()))
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO runs (id, experiment_id, architecture_id, metrics, timestamp)
-                VALUES (?, ?, ?, ?, ?)
-            """,
-                (
-                    run_id,
-                    run_info.get("experiment_id"),
-                    run_info["architecture_id"],
-                    json.dumps(run_info["metrics"]),
-                    datetime.now().isoformat(),
-                ),
+        architecture_id = run_info["architecture_id"]
+
+        with self._get_session() as session:
+            # Upsert architecture if arch_spec is provided
+            arch_spec = run_info.get("arch_spec")
+            if arch_spec:
+                stmt = insert(Architecture).values(
+                    vector_hash=architecture_id,
+                    arch_spec=json.dumps(arch_spec),
+                    code_commit=run_info.get("code_commit"),
+                )
+                # On conflict do nothing (SQLite 3.24+)
+                stmt = stmt.on_conflict_do_nothing(index_elements=["vector_hash"])
+                session.execute(stmt)
+
+            run = Run(
+                id=run_id,
+                experiment_id=run_info.get("experiment_id"),
+                architecture_id=architecture_id,
+                metrics=json.dumps(run_info["metrics"]),
+                timestamp=datetime.now(),
             )
-            conn.commit()
+            session.add(run)
+            session.commit()
         return run_id
 
-    def get_experiment_details(self, experiment_id: str) -> Optional[Dict[str, Any]]:
+    async def get_experiment_details(
+        self, experiment_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get details of a specific experiment."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM experiments WHERE id = ?", (experiment_id,))
-            row = cursor.fetchone()
-            if row is None:
+        with self._get_session() as session:
+            experiment = session.get(Experiment, experiment_id)
+            if experiment is None:
                 return None
             return {
-                "id": row[0],
-                "status": row[1],
-                "start_time": row[2],
-                "end_time": row[3],
-                "config": json.loads(row[4]),
+                "id": experiment.id,
+                "status": experiment.status,
+                "start_time": (
+                    experiment.start_time.isoformat() if experiment.start_time else None
+                ),
+                "end_time": (
+                    experiment.end_time.isoformat() if experiment.end_time else None
+                ),
+                "config": json.loads(experiment.config) if experiment.config else {},
             }
 
-    def list_experiments(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
-        """List all experiments, optionally filtered by status."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            if status:
-                cursor.execute("SELECT * FROM experiments WHERE status = ?", (status,))
-            else:
-                cursor.execute("SELECT * FROM experiments")
-            rows = cursor.fetchall()
-            return [
-                {
-                    "id": row[0],
-                    "status": row[1],
-                    "start_time": row[2],
-                    "end_time": row[3],
-                    "config": json.loads(row[4]),
-                }
-                for row in rows
-            ]
-
-    def create_experiment(
+    async def create_experiment(
         self, name: str, description: Optional[str], config: Dict[str, Any]
     ) -> str:
         """Create a new experiment."""
         experiment_id = str(datetime.now().timestamp())
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO experiments (id, status, start_time, config)
-                VALUES (?, ?, ?, ?)
-            """,
-                (
-                    experiment_id,
-                    "created",
-                    datetime.now().isoformat(),
-                    json.dumps({"name": name, "description": description, **config}),
-                ),
+        with self._get_session() as session:
+            experiment = Experiment(
+                id=experiment_id,
+                status="created",
+                start_time=datetime.now(),
+                config=json.dumps({"name": name, "description": description, **config}),
             )
-            conn.commit()
+            session.add(experiment)
+            session.commit()
         return experiment_id
 
-    def update_experiment_status(self, experiment_id: str, status: str) -> None:
+    async def update_experiment_status(self, experiment_id: str, status: str) -> None:
         """Update the status of an experiment."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            if status == "completed":
-                cursor.execute(
-                    """
-                    UPDATE experiments
-                    SET status = ?, end_time = ?
-                    WHERE id = ?
-                """,
-                    (status, datetime.now().isoformat(), experiment_id),
-                )
+        with self._get_session() as session:
+            experiment = session.get(Experiment, experiment_id)
+            if experiment:
+                experiment.status = status
+                if status == "completed":
+                    experiment.end_time = datetime.now()
+                session.commit()
             else:
-                cursor.execute(
-                    """
-                    UPDATE experiments
-                    SET status = ?
-                    WHERE id = ?
-                """,
-                    (status, experiment_id),
-                )
-            conn.commit()
+                logger.warning(f"No experiment found with id={experiment_id}")
 
-    def delete_experiment(self, experiment_id: str) -> bool:
+    async def delete_experiment(self, experiment_id: str) -> bool:
         """Delete an experiment."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM experiments WHERE id = ?", (experiment_id,))
-            if cursor.fetchone() is None:
+        with self._get_session() as session:
+            experiment = session.get(Experiment, experiment_id)
+            if experiment is None:
                 return False
-            cursor.execute("DELETE FROM runs WHERE experiment_id = ?", (experiment_id,))
-            cursor.execute("DELETE FROM experiments WHERE id = ?", (experiment_id,))
-            conn.commit()
+            session.delete(experiment)
+            session.commit()
             return True
 
-    def get_experiment(self, experiment_id: str) -> Optional[Dict[str, Any]]:
+    async def get_experiment(self, experiment_id: str) -> Optional[Dict[str, Any]]:
         """Get experiment details by ID."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM experiments WHERE id = ?", (experiment_id,))
-            row = cursor.fetchone()
-            if row is None:
-                return None
-            return {
-                "id": row[0],
-                "status": row[1],
-                "start_time": row[2],
-                "end_time": row[3],
-                "config": json.loads(row[4]),
-            }
+        return await self.get_experiment_details(experiment_id)
 
-    def get_metrics(
+    async def get_metrics(
         self,
         experiment_id: Optional[str] = None,
         start_time: Optional[datetime] = None,
@@ -289,104 +214,91 @@ class ResultsDB(BaseResultsDB):
         metric_names: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """Get metrics with optional filtering."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            query = "SELECT experiment_id, metrics, timestamp FROM runs"
-            conditions = []
-            params = []
+        with self._get_session() as session:
+            query = session.query(Run)
 
             if experiment_id:
-                conditions.append("experiment_id = ?")
-                params.append(experiment_id)
+                query = query.filter_by(experiment_id=experiment_id)
             if start_time:
-                conditions.append("timestamp >= ?")
-                params.append(start_time.isoformat())
+                query = query.filter(Run.timestamp >= start_time)
             if end_time:
-                conditions.append("timestamp <= ?")
-                params.append(end_time.isoformat())
+                query = query.filter(Run.timestamp <= end_time)
 
-            if conditions:
-                query += " WHERE " + " AND ".join(conditions)
-
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+            runs = query.all()
             metrics = []
-            for row in rows:
-                metric_data = json.loads(row[1])
+            for run in runs:
+                metric_data = json.loads(run.metrics) if run.metrics else {}
                 if metric_names:
                     metric_data = {
                         k: v for k, v in metric_data.items() if k in metric_names
                     }
                 metrics.append(
                     {
-                        "experiment_id": row[0],
+                        "experiment_id": run.experiment_id,
                         "metrics": metric_data,
-                        "timestamp": row[2],
+                        "timestamp": (
+                            run.timestamp.isoformat() if run.timestamp else None
+                        ),
                     }
                 )
             return metrics
 
-    def get_architecture(self, architecture_id: str) -> Optional[Dict[str, Any]]:
+    async def get_architecture(self, architecture_id: str) -> Optional[Dict[str, Any]]:
         """Get architecture details by ID."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT architecture_id, metrics, timestamp
-                FROM runs
-                WHERE architecture_id = ?
-                ORDER BY timestamp DESC
-                LIMIT 1
-            """,
-                (architecture_id,),
-            )
-            row = cursor.fetchone()
-            if row is None:
+        with self._get_session() as session:
+            architecture = session.get(Architecture, architecture_id)
+            if architecture is None:
                 return None
-            return {"id": row[0], "metrics": json.loads(row[1]), "timestamp": row[2]}
+            return {
+                "id": architecture.vector_hash,
+                "arch_spec": json.loads(architecture.arch_spec),
+                "code_commit": architecture.code_commit,
+                "creation_time": architecture.creation_time.isoformat(),
+            }
 
-    def list_architectures(
+    async def list_architectures(
         self, skip: int = 0, limit: int = 100
     ) -> List[Dict[str, Any]]:
         """List architectures with pagination."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT DISTINCT architecture_id, metrics, timestamp
-                FROM runs
-                ORDER BY timestamp DESC
-                LIMIT ? OFFSET ?
-            """,
-                (limit, skip),
+        with self._get_session() as session:
+            architectures = (
+                session.query(Architecture)
+                .order_by(Architecture.creation_time.desc())
+                .offset(skip)
+                .limit(limit)
+                .all()
             )
-            rows = cursor.fetchall()
-            return [
-                {"id": row[0], "metrics": json.loads(row[1]), "timestamp": row[2]}
-                for row in rows
-            ]
-
-    def list_experiments(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
-        """List experiments with pagination."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT id, status, start_time, end_time, config
-                FROM experiments
-                ORDER BY start_time DESC
-                LIMIT ? OFFSET ?
-            """,
-                (limit, skip),
-            )
-            rows = cursor.fetchall()
             return [
                 {
-                    "id": row[0],
-                    "status": row[1],
-                    "start_time": row[2],
-                    "end_time": row[3],
-                    "config": json.loads(row[4]),
+                    "id": arch.vector_hash,
+                    "arch_spec": json.loads(arch.arch_spec),
+                    "code_commit": arch.code_commit,
+                    "creation_time": arch.creation_time.isoformat(),
                 }
-                for row in rows
+                for arch in architectures
+            ]
+
+    async def list_experiments(
+        self, skip: int = 0, limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """List experiments with pagination."""
+        with self._get_session() as session:
+            experiments = (
+                session.query(Experiment)
+                .order_by(Experiment.start_time.desc())
+                .offset(skip)
+                .limit(limit)
+                .all()
+            )
+            return [
+                {
+                    "id": exp.id,
+                    "status": exp.status,
+                    "start_time": (
+                        exp.start_time.isoformat() if exp.start_time else None
+                    ),
+                    "end_time": exp.end_time.isoformat() if exp.end_time else None,
+                    "config": json.loads(exp.config) if exp.config else {},
+                }
+                for exp in experiments
             ]

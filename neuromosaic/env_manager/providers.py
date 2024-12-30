@@ -30,7 +30,7 @@ class DockerContainerManager(ContainerManager):
 
         Args:
             config: Dictionary containing Docker-specific settings:
-                - image: Base Docker image to use
+                - base_image: Base Docker image to use
                 - gpu: Whether to enable GPU support
                 - memory_limit: Container memory limit
                 - timeout: Container execution timeout
@@ -47,7 +47,7 @@ class DockerContainerManager(ContainerManager):
             logger.error("Failed to connect to Docker daemon")
             raise RuntimeError(f"Docker initialization failed: {str(e)}")
 
-        self.image = config.get("image", "python:3.9")
+        self.image = config.get("base_image", "python:3.9")
         self.gpu = config.get("gpu", False)
         self.memory_limit = config.get("memory_limit", "4g")
         self.timeout = config.get("timeout", 3600)  # 1 hour default
@@ -57,9 +57,10 @@ class DockerContainerManager(ContainerManager):
             "health_check",
             {
                 "test": ["CMD", "python", "-c", "import sys; sys.exit(0)"],
-                "interval": 30,
-                "timeout": 10,
+                "interval": 30000000000,  # 30 seconds in nanoseconds
+                "timeout": 10000000000,  # 10 seconds in nanoseconds
                 "retries": 3,
+                "start_period": 1000000000,  # 1 second in nanoseconds
             },
         )
 

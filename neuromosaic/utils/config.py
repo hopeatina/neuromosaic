@@ -107,6 +107,7 @@ class LLMConfig(BaseConfig):
     openai_api_key: Optional[str] = field(default=None)
     anthropic_api_key: Optional[str] = field(default=None)
     cohere_api_key: Optional[str] = field(default=None)
+    deepseek_api_key: Optional[str] = field(default=None)  # For DeepSeek API
     provider: str = field(default="openai")
     model: str = field(default="gpt-4")
     temperature: float = field(default=0.7)
@@ -118,6 +119,13 @@ class LLMConfig(BaseConfig):
             "backoff_factor": 2.0,
         }
     )
+    # Provider-specific fields
+    api_base: Optional[str] = field(default=None)  # For custom API endpoints
+    model_path: Optional[str] = field(default=None)  # For local LLaMA models
+    n_ctx: int = field(default=2048)  # For local LLaMA models
+    n_gpu_layers: int = field(default=0)  # For local LLaMA models
+    n_batch: int = field(default=512)  # For local LLaMA models
+    deployment_type: str = field(default="cloud")  # "local" or "cloud"
 
     @classmethod
     def from_env(cls) -> "LLMConfig":
@@ -126,16 +134,23 @@ class LLMConfig(BaseConfig):
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
             cohere_api_key=os.getenv("COHERE_API_KEY"),
+            deepseek_api_key=os.getenv("DEEPSEEK_API_KEY"),
             provider=os.getenv("LLM_PROVIDER", "openai"),
             model=os.getenv("LLM_MODEL", "gpt-4"),
             temperature=float(os.getenv("LLM_TEMPERATURE", "0.7")),
             max_tokens=int(os.getenv("LLM_MAX_TOKENS", "2000")),
             retry_config={"max_retries": 3, "initial_wait": 1.0, "backoff_factor": 2.0},
+            api_base=os.getenv("LLM_API_BASE"),
+            model_path=os.getenv("LLAMA_MODEL_PATH"),
+            n_ctx=int(os.getenv("LLAMA_N_CTX", "2048")),
+            n_gpu_layers=int(os.getenv("LLAMA_N_GPU_LAYERS", "0")),
+            n_batch=int(os.getenv("LLAMA_N_BATCH", "512")),
+            deployment_type=os.getenv("LLAMA_DEPLOYMENT_TYPE", "cloud"),
         )
 
     def __post_init__(self):
         """Validate LLM configuration."""
-        if self.provider not in ["openai", "anthropic", "cohere", "llama"]:
+        if self.provider not in ["openai", "anthropic", "cohere", "llama", "deepseek"]:
             raise ConfigurationError(f"Invalid LLM provider: {self.provider}")
         if self.temperature < 0 or self.temperature > 1:
             raise ConfigurationError(f"Invalid temperature: {self.temperature}")
@@ -147,6 +162,42 @@ class LLMConfig(BaseConfig):
                 "initial_wait": 1.0,
                 "backoff_factor": 2.0,
             }
+
+        # Set default API base for DeepSeek
+        if self.provider == "deepseek" and not self.api_base:
+            self.api_base = "https://api.deepseek.com/v1"
+
+        # Validate provider-specific fields
+        if self.provider == "deepseek":
+            if not self.deepseek_api_key:
+                raise ConfigurationError("DeepSeek API key is required")
+            if not self.model:
+                self.model = "deepseek-chat"  # Default to DeepSeek-V3
+
+        elif self.provider == "llama":
+            if self.deployment_type not in ["local", "cloud"]:
+                raise ConfigurationError(
+                    f"Invalid deployment_type: {self.deployment_type}"
+                )
+
+            if self.deployment_type == "local":
+                if not self.model_path:
+                    raise ConfigurationError(
+                        "LLaMA model path is required for local deployment"
+                    )
+                if self.n_ctx <= 0:
+                    raise ConfigurationError(f"Invalid n_ctx: {self.n_ctx}")
+                if self.n_gpu_layers < 0:
+                    raise ConfigurationError(
+                        f"Invalid n_gpu_layers: {self.n_gpu_layers}"
+                    )
+                if self.n_batch <= 0:
+                    raise ConfigurationError(f"Invalid n_batch: {self.n_batch}")
+            else:  # cloud deployment
+                if not self.deepseek_api_key:  # Use DeepSeek API key for cloud LLaMA
+                    raise ConfigurationError(
+                        "DeepSeek API key is required for cloud deployment"
+                    )
 
 
 @dataclass
@@ -436,7 +487,6 @@ class Config(BaseConfig):
 def parse_size(size_str: str) -> int:
     """Parse size string (e.g., '50GB' or '50G') to bytes."""
     # Support both full units and single letter units
-    print(size_str)
     units = {
         "TB": 1024**4,
         "T": 1024**4,

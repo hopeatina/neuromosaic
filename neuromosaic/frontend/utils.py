@@ -9,10 +9,13 @@ The module serves as a bridge between the raw data from ResultsDB
 and the visualization-ready format needed by the dashboard components.
 """
 
+import logging
 from typing import Dict, List, Any, Tuple
 import numpy as np
 import requests
 from neuromosaic.results_db import ResultsDB
+
+logger = logging.getLogger(__name__)
 
 
 def format_experiment_data(
@@ -113,5 +116,5 @@ def fetch_experiments_data(api_url: str) -> List[Dict[str, Any]]:
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        print(f"Error fetching experiments: {e}")
+        logger.error(f"Error fetching experiments: {e}")
         return []

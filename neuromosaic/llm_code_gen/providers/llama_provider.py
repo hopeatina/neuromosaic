@@ -1,14 +1,18 @@
 """
-Local LLaMA-based code generator implementation using llama-cpp-python.
+LLaMA-based code generator implementation supporting both local and cloud deployments.
 
-This implementation uses the llama-cpp-python library to run LLaMA models locally.
-It supports both CPU and GPU inference, and can work with various LLaMA model formats
-including GGUF (recommended).
+For local deployment:
+- Uses llama-cpp-python library to run LLaMA models locally
+- Supports both CPU and GPU inference
+- Works with various LLaMA model formats including GGUF (recommended)
 
-For GPU support, llama-cpp-python must be installed with CUDA support:
+For cloud deployment:
+- Uses DeepSeek's OpenAI-compatible API
+- Requires only an API key
+- Compatible with OpenAI SDK
+
+For GPU support in local deployment, llama-cpp-python must be installed with CUDA support:
     CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
-
-The model can be configured to use GPU by setting n_gpu_layers > 0 in the config.
 """
 
 import ast
@@ -17,6 +21,7 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 
 from llama_cpp import Llama
+from openai import OpenAI
 
 from ..codegen_interface import CodeGenerator, PromptTemplate
 from ...utils.logging import setup_logger
@@ -116,20 +121,12 @@ Return only the code, no explanations. Start with imports and then the class def
 
 class LlamaCodeGenerator(CodeGenerator):
     """
-    Code generator implementation using a local LLaMA model via llama-cpp-python.
+    Code generator implementation supporting both local and cloud-hosted LLaMA models.
 
     This implementation supports:
-    - CPU and GPU inference
-    - Various model formats (GGUF recommended)
-    - Configurable context size and batch size
-    - Temperature and top_p sampling parameters
-
-    Attributes:
-        model: Llama instance from llama-cpp-python
-        temperature: Sampling temperature for generation
-        max_tokens: Maximum number of tokens to generate
-        top_p: Top-p sampling parameter
-        context_size: Model's context window size
+    - Local deployment with CPU/GPU inference
+    - Cloud deployment using DeepSeek's OpenAI-compatible API
+    - Configurable parameters for both deployment types
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -137,40 +134,62 @@ class LlamaCodeGenerator(CodeGenerator):
 
         Args:
             config: Configuration dictionary containing:
-                - model_path: Path to the model file (required)
+                Common fields:
+                - deployment_type: "local" or "cloud"
                 - temperature: Sampling temperature (default: 0.7)
                 - max_tokens: Maximum tokens to generate (default: 2048)
                 - top_p: Top-p sampling parameter (default: 0.95)
+
+                For local deployment:
+                - model_path: Path to the model file
                 - n_ctx: Context window size (default: 2048)
                 - n_gpu_layers: Number of layers to offload to GPU (default: 0)
                 - n_batch: Batch size for prompt processing (default: 512)
+
+                For cloud deployment:
+                - deepseek_api_key: API key for DeepSeek service
+                - api_base: Base URL for API endpoint (optional)
+                - model: Model to use (default: deepseek-chat)
         """
         super().__init__(config)
 
-        model_path = config.get("model_path")
-        if not model_path:
-            raise ValueError(
-                "LLaMA model path is required. Set it in the config under 'model_path'."
-            )
-
-        # Model configuration
+        self.deployment_type = config.get("deployment_type", "local")
         self.temperature = config.get("temperature", 0.7)
         self.max_tokens = config.get("max_tokens", 2048)
         self.top_p = config.get("top_p", 0.95)
 
-        # Initialize the model
-        self.model = Llama(
-            model_path=model_path,
-            n_ctx=config.get("n_ctx", 2048),
-            n_gpu_layers=config.get("n_gpu_layers", 0),
-            n_batch=config.get("n_batch", 512),
-        )
+        if self.deployment_type == "local":
+            model_path = config.get("model_path")
+            if not model_path:
+                raise ValueError("LLaMA model path is required for local deployment")
 
-        logger.info(
-            "Initialized LlamaCodeGenerator with model: %s, temp: %f",
-            model_path,
-            self.temperature,
-        )
+            # Initialize local model
+            self.model = Llama(
+                model_path=model_path,
+                n_ctx=config.get("n_ctx", 2048),
+                n_gpu_layers=config.get("n_gpu_layers", 0),
+                n_batch=config.get("n_batch", 512),
+            )
+            logger.info(
+                "Initialized local LlamaCodeGenerator with model: %s, temp: %f",
+                model_path,
+                self.temperature,
+            )
+        else:  # cloud deployment
+            api_key = config.get("deepseek_api_key")
+            if not api_key:
+                raise ValueError("DeepSeek API key is required for cloud deployment")
+
+            # Initialize OpenAI client with DeepSeek configuration
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=config.get("api_base", "https://api.deepseek.com/v1"),
+            )
+            self.model_name = config.get("model", "deepseek-chat")
+            logger.info(
+                "Initialized cloud LlamaCodeGenerator with model: %s",
+                self.model_name,
+            )
 
     def _setup_template(self) -> None:
         """Initialize the LLaMA-specific prompt template."""
@@ -179,7 +198,7 @@ class LlamaCodeGenerator(CodeGenerator):
     async def generate_code(
         self, arch_spec: Dict[str, Any], max_retries: int = 3
     ) -> str:
-        """Generate code using the local LLaMA model.
+        """Generate code using either local or cloud LLaMA model.
 
         Args:
             arch_spec: Architecture specification dictionary
@@ -195,18 +214,35 @@ class LlamaCodeGenerator(CodeGenerator):
 
         for attempt in range(max_retries):
             try:
-                # Generate code using the model
-                response = self.model.create_completion(
-                    prompt,
-                    max_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                    stop=["```"],  # Stop at code block end
-                )
-
-                code = self.prompt_template.parse_response(
-                    response["choices"][0]["text"]
-                )
+                if self.deployment_type == "local":
+                    response = self.model.create_completion(
+                        prompt,
+                        max_tokens=self.max_tokens,
+                        temperature=self.temperature,
+                        top_p=self.top_p,
+                        stop=["```"],
+                    )
+                    code = self.prompt_template.parse_response(
+                        response["choices"][0]["text"]
+                    )
+                else:  # cloud deployment
+                    response = self.client.chat.completions.create(
+                        model=self.model_name,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are an expert PyTorch developer.",
+                            },
+                            {"role": "user", "content": prompt},
+                        ],
+                        max_tokens=self.max_tokens,
+                        temperature=self.temperature,
+                        top_p=self.top_p,
+                        stop=["```"],
+                    )
+                    code = self.prompt_template.parse_response(
+                        response.choices[0].message.content
+                    )
 
                 if await self.validate_code(code):
                     return code
