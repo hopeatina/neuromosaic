@@ -13,8 +13,8 @@ export default function NotFound() {
         Page Not Found
       </Text>
       <Text variant="body-lg" textColor="muted" className="mb-8 max-w-xl">
-        Sorry, we couldn't find the page you're looking for. Please check the
-        URL or navigate back to our homepage.
+        Sorry, we couldn&apos;t find the page you&apos;re looking for. Please
+        check the URL or navigate back to our homepage.
       </Text>
       <Link href="/" className="inline-block">
         <Button size="lg">Return Home</Button>
