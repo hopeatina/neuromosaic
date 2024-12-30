@@ -168,9 +168,9 @@ export default function DistributedPage() {
             development. Early contributors get priority access and additional
             benefits.
           </Text>
-          <Button size="lg" asChild>
-            <Link href="/get-involved#join-waitlist">Request Early Access</Link>
-          </Button>
+          <Link href="/get-involved#join-waitlist">
+            <Button size="lg">Request Early Access</Button>
+          </Link>
         </Card>
       </Container>
     </div>

@@ -170,7 +170,7 @@ export default function GetInvolvedPage() {
                     <option value="other">Other</option>
                   </select>
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" size="lg" className="w-full">
                   Join Waitlist
                 </Button>
               </form>
