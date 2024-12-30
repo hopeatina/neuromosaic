@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-height: 4rem;
+    --hero-height: max(80vh, 600px);
+    --scroll-offset: var(--header-height);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--scroll-offset);
+  }
+
+  body {
+    @apply bg-background-light text-neutral-900 antialiased;
+  }
+
+  /* Typography defaults */
+  h1 {
+    @apply text-h1 font-bold;
+  }
+
+  h2 {
+    @apply text-h2 font-semibold;
+  }
+
+  h3 {
+    @apply text-h3 font-medium;
+  }
+
+  p {
+    @apply text-body;
+  }
+}
+
+@layer components {
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-2 rounded font-medium transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply btn border-2 border-primary text-primary hover:bg-primary hover:text-white;
+  }
+
+  /* Container */
+  .container {
+    @apply mx-auto px-4 max-w-7xl;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded shadow-card hover:shadow-card-hover transition-shadow duration-200;
+  }
+
+  /* Form elements */
+  .form-input {
+    @apply w-full px-4 py-2 rounded border border-neutral-300 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-200;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-neutral-700 mb-1;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply text-neutral-700 hover:text-primary transition-colors duration-200;
+  }
+
+  .nav-link-active {
+    @apply text-primary font-medium;
+  }
+
+  /* Header styles */
+  .header-transparent {
+    @apply bg-transparent border-transparent;
+  }
+
+  .header-solid {
+    @apply bg-background-glass border-neutral-800 shadow-header backdrop-blur-md;
+  }
+
+  /* Hero section */
+  .hero-gradient {
+    @apply bg-gradient-hero from-primary via-background-dark to-background-dark;
+  }
+
+  .hero-content {
+    @apply relative z-10 flex flex-col items-center justify-center min-h-hero py-24 text-white;
+  }
+
+  /* Glow effects */
+  .glow-sm {
+    @apply absolute blur-md opacity-50 bg-gradient-glow from-primary-light to-transparent;
+  }
+
+  .glow-lg {
+    @apply absolute blur-xl opacity-30 bg-gradient-glow from-accent-light to-transparent;
+  }
+}
+
+@layer utilities {
+  /* Custom gradient text utility */
+  .text-gradient {
+    @apply bg-gradient-primary bg-clip-text text-transparent;
+  }
+
+  /* Section spacing utility */
+  .section-padding {
+    @apply py-section-y;
+  }
+
+  /* Responsive container padding */
+  .container-padding {
+    @apply px-4 md:px-6 lg:px-8;
+  }
+
+  /* Backdrop blur utilities */
+  .backdrop-blur-xs {
+    @apply backdrop-blur-[2px];
+  }
+
+  .backdrop-blur-sm {
+    @apply backdrop-blur-[4px];
+  }
+
+  .backdrop-blur-md {
+    @apply backdrop-blur-[8px];
+  }
+
+  .backdrop-blur-lg {
+    @apply backdrop-blur-[16px];
+  }
+
+  /* Animation utilities */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 6s ease-in-out infinite;
+  }
+} 

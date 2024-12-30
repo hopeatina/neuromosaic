@@ -1,101 +1,221 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Container } from "@/components/ui/Container";
+import { Button } from "@/components/ui/Button";
+import { Text } from "@/components/ui/Text";
+import { Logo } from "@/components/ui/Logo";
+import { FloatingPetal } from "@/components/ui/FloatingPetal";
+
+const features = [
+  {
+    name: "Iterative Refinement",
+    description:
+      "Continuously improve AI models through a systematic process of training, testing, and refinement.",
+  },
+  {
+    name: "Distributed Computing",
+    description:
+      "Leverage the power of distributed computing to accelerate model training and experimentation.",
+  },
+  {
+    name: "Community Driven",
+    description:
+      "Join a community of researchers and developers working together to advance AI capabilities.",
+  },
+  {
+    name: "Open Source",
+    description:
+      "Built on open-source principles, enabling transparency and collaborative development.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="relative">
+      {/* Hero section */}
+      <section className="relative isolate overflow-hidden min-h-[calc(100vh-4rem)] flex items-center">
+        {/* Background gradient */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.DEFAULT),theme(colors.background.dark))]" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Floating petals */}
+        <div className="absolute inset-0 -z-5 overflow-hidden">
+          {/* Large petal top left */}
+          <FloatingPetal
+            size="xl"
+            className="absolute -top-40 -left-20"
+            gradientId="petal-1"
+          />
+
+          {/* Medium petal top right */}
+          <FloatingPetal
+            size="lg"
+            className="absolute -top-20 -right-20"
+            gradientId="petal-2"
+            delay={1}
+          />
+
+          {/* Small petal bottom left */}
+          <FloatingPetal
+            size="md"
+            className="absolute bottom-40 left-20"
+            gradientId="petal-3"
+            delay={2}
+          />
+
+          {/* Extra small petal bottom right */}
+          <FloatingPetal
+            size="sm"
+            className="absolute bottom-20 right-40"
+            gradientId="petal-4"
+            delay={3}
+          />
+
+          {/* Additional background petals */}
+          <FloatingPetal
+            size="sm"
+            className="absolute top-1/3 left-1/4"
+            gradientId="petal-5"
+            delay={0.5}
+          />
+          <FloatingPetal
+            size="md"
+            className="absolute top-2/3 right-1/4"
+            gradientId="petal-6"
+            delay={1.5}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* Hero content */}
+        <Container className="relative flex items-center justify-center w-full py-24 sm:py-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="mx-auto max-w-3xl text-center flex flex-col items-center"
+          >
+            {/* Logo with floating animation */}
+            <motion.div
+              initial={{ y: 0 }}
+              animate={{ y: [-10, 10, -10] }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="flex justify-center mb-8"
+            >
+              <Logo size="lg" />
+            </motion.div>
+
+            {/* Main headline */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="w-full"
+            >
+              <Text
+                as="h1"
+                variant="display"
+                textColor="white"
+                className="mx-auto mb-6 text-center"
+              >
+                Train and Improve AI Models Through Community Collaboration
+              </Text>
+            </motion.div>
+
+            {/* Subtext */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="w-full"
+            >
+              <Text
+                variant="body-lg"
+                textColor="white"
+                className="max-w-2xl mx-auto mb-8 opacity-80"
+              >
+                Join our distributed platform for iterative AI model refinement.
+                Contribute to the future of machine learning through
+                collaborative experimentation.
+              </Text>
+            </motion.div>
+
+            {/* CTA buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex flex-wrap justify-center gap-4"
+            >
+              <Link href="/get-involved" className="inline-block">
+                <Button size="lg">Join the Waitlist</Button>
+              </Link>
+              <Link href="/about" className="inline-block">
+                <Button variant="secondary" size="lg">
+                  Learn More
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </Container>
+
+        {/* Wave divider */}
+        <div className="absolute bottom-0 left-0 right-0 text-background">
+          <svg
+            className="w-full h-24 fill-current"
+            viewBox="0 0 1440 74"
+            preserveAspectRatio="none"
+          >
+            <path d="M0,0 C480,74 960,74 1440,0 L1440,74 L0,74 Z" />
+          </svg>
+        </div>
+      </section>
+
+      {/* Features section */}
+      <section className="relative bg-background">
+        <Container className="py-24 sm:py-32">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mx-auto max-w-2xl text-center"
+          >
+            <Text as="h2" variant="h1" className="mb-4">
+              Advancing AI Through Collaboration
+            </Text>
+            <Text variant="body-lg" textColor="muted" className="mb-16">
+              Our platform combines distributed computing with community-driven
+              development to create more capable AI models.
+            </Text>
+          </motion.div>
+
+          {/* Feature grid */}
+          <div className="mx-auto max-w-7xl">
+            <motion.div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={feature.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.15 }}
+                  viewport={{ once: true }}
+                  className="relative"
+                >
+                  <Text as="h3" variant="h3" className="mb-3">
+                    {feature.name}
+                  </Text>
+                  <Text textColor="muted">{feature.description}</Text>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </Container>
+      </section>
+    </main>
   );
 }

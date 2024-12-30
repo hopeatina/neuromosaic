@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<linearGradient id="swirl-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+			<stop offset="0%" style="stop-color:#2e2066;stop-opacity:1" />
+			<stop offset="50%" style="stop-color:#7c71d8;stop-opacity:1" />
+			<stop offset="100%" style="stop-color:#bf3abb;stop-opacity:1" />
+		</linearGradient>
+		<linearGradient id="swirl-gradient-2" x1="100%" y1="0%" x2="0%" y2="100%">
+			<stop offset="0%" style="stop-color:#bf3abb;stop-opacity:0.6" />
+			<stop offset="100%" style="stop-color:#2e2066;stop-opacity:0.6" />
+		</linearGradient>
+		<filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+			<feGaussianBlur in="SourceGraphic" stdDeviation="4" />
+		</filter>
+	</defs>
+
+	<!-- Main spiral -->
+	<g transform="translate(300, 300)">
+		<path d="M0,0 
+				 C100,0 180,-80 180,-180 
+				 C180,-280 100,-360 0,-360 
+				 C-100,-360 -180,-280 -180,-180 
+				 C-180,-80 -100,0 0,0 
+				 Z" fill="url(#swirl-gradient-1)" style="mix-blend-mode: soft-light;">
+			<animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="30s"
+				repeatCount="indefinite" />
+		</path>
+
+		<!-- Inner decorative curves -->
+		<path d="M0,0 
+				 C60,0 108,-48 108,-108 
+				 C108,-168 60,-216 0,-216 
+				 C-60,-216 -108,-168 -108,-108 
+				 C-108,-48 -60,0 0,0 
+				 Z" fill="url(#swirl-gradient-2)" style="mix-blend-mode: overlay;" filter="url(#glow)">
+			<animateTransform attributeName="transform" type="rotate" from="360 0 0" to="0 0 0" dur="20s"
+				repeatCount="indefinite" />
+		</path>
+
+		<!-- Decorative dots -->
+		<g>
+			<circle cx="0" cy="-180" r="4" fill="#bf3abb" opacity="0.8">
+				<animate attributeName="opacity" values="0.8;0.3;0.8" dur="4s" repeatCount="indefinite" />
+			</circle>
+			<circle cx="180" cy="0" r="4" fill="#7c71d8" opacity="0.8">
+				<animate attributeName="opacity" values="0.3;0.8;0.3" dur="4s" repeatCount="indefinite" />
+			</circle>
+			<circle cx="-180" cy="0" r="4" fill="#2e2066" opacity="0.8">
+				<animate attributeName="opacity" values="0.8;0.3;0.8" dur="4s" repeatCount="indefinite" />
+			</circle>
+		</g>
+	</g>
+</svg>
