@@ -4,14 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/Text";
 
-// Add proper type imports
-import type { JSX as JSXTypes } from "react";
-declare global {
-  namespace JSX {
-    interface IntrinsicElements extends JSXTypes.IntrinsicElements {}
-  }
-}
-
 interface WaitlistFormProps {
   onSuccess?: () => void;
 }

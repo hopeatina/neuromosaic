@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import { Canvas, useFrame, ThreeElements } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef, useMemo, useEffect, useState } from "react";
 
 // No need for custom type declarations as @react-three/fiber already provides these
@@ -47,6 +47,7 @@ interface PetalData {
 }
 
 interface SdfUniforms {
+  [key: string]: THREE.IUniform<any>;
   uTime: { value: number };
   uResolution: { value: THREE.Vector2 };
   uPetalCount: { value: number };
@@ -140,8 +141,9 @@ export function NeuromosaicBlobs() {
         fov: SCENE_PARAMS.FOV,
       }}
       gl={{ alpha: false, antialias: true }}
-      children={sceneBounding}
-    />
+    >
+      {sceneBounding}
+    </Canvas>
   );
 }
 
@@ -199,7 +201,6 @@ function Scene3D({ debugMode }: { debugMode: boolean }) {
  */
 function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const lastLogTime = useRef(0);
 
   // Adjust to taste
   const PETAL_COUNT = 8;
@@ -306,46 +307,12 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
 
   // Log petal positions and scene occupation
   const logPetalStatus = (time: number) => {
-    if (debugMode && time - lastLogTime.current >= 10) {
-      console.log("\n=== Petal Status at time", time.toFixed(2), "===");
-
-      // Calculate scene occupation including petal scales
-      const bounds = {
-        minX: Math.min(...petalData.map((p) => p.center.x - p.scale.x)),
-        maxX: Math.max(...petalData.map((p) => p.center.x + p.scale.x)),
-        minY: Math.min(...petalData.map((p) => p.center.y - p.scale.y)),
-        maxY: Math.max(...petalData.map((p) => p.center.y + p.scale.y)),
-        minZ: Math.min(...petalData.map((p) => p.center.z - p.scale.z)),
-        maxZ: Math.max(...petalData.map((p) => p.center.z + p.scale.z)),
-      };
-
-      console.log("Scene occupation (including petal scales):");
-      console.log(
-        `X range: ${bounds.minX.toFixed(2)} to ${bounds.maxX.toFixed(2)}`
-      );
-      console.log(
-        `Y range: ${bounds.minY.toFixed(2)} to ${bounds.maxY.toFixed(2)}`
-      );
-      console.log(
-        `Z range: ${bounds.minZ.toFixed(2)} to ${bounds.maxZ.toFixed(2)}`
-      );
-
-      console.log("\nIndividual petal data:");
-      petalData.forEach((petal, i) => {
-        console.log(
-          `Petal ${i}: ` +
-            `center(${petal.center.x.toFixed(2)}, ${petal.center.y.toFixed(
-              2
-            )}, ${petal.center.z.toFixed(2)}), ` +
-            `scale(${petal.scale.x.toFixed(2)}, ${petal.scale.y.toFixed(
-              2
-            )}, ${petal.scale.z.toFixed(2)}), ` +
-            `twist=${petal.twist.toFixed(3)}`
-        );
-      });
-
-      lastLogTime.current = time;
-    }
+    const status: Record<string, number | boolean> = {
+      time,
+      petalCount: petalData.length,
+      isDebugMode: debugMode,
+    };
+    console.log("Petal Status:", status);
   };
 
   // 2) Uniforms
@@ -466,7 +433,7 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
   return (
     <shaderMaterial
       ref={materialRef}
-      uniforms={uniforms as any}
+      uniforms={uniforms as THREE.ShaderMaterialParameters["uniforms"]}
       vertexShader={`
         varying vec2 vUv;
         void main() {
