@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/Text";
 import { Logo } from "@/components/ui/Logo";
 import { NeuromosaicBlobs } from "@/components/gl/NeuromosaicBlobs";
-import type { FC, HTMLProps } from "react";
+import type { FC } from "react";
 
 interface HeroProps {
   onWaitlistClick: () => void;

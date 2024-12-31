@@ -1,18 +1,11 @@
 "use client";
 
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, ThreeElements } from "@react-three/fiber";
 import { useRef, useMemo, useEffect, useState } from "react";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      mesh: any;
-      planeGeometry: any;
-      shaderMaterial: any;
-    }
-  }
-}
+// No need for custom type declarations as @react-three/fiber already provides these
+// The library already handles the proper typing for Three.js elements
 
 // Petal color combos (matching FloatingPetal.tsx)
 const petalColors = [
@@ -104,8 +97,8 @@ const SCENE_PARAMS = {
   },
 
   // Movement settings
-  MIN_SPEED: 0.003, // Minimum speed to maintain
-  MAX_SPEED: 0.006, // Maximum speed cap
+  MIN_SPEED: 0.0003, // Minimum speed to maintain
+  MAX_SPEED: 0.0006, // Maximum speed cap
   REPULSION_RADIUS: 0.8, // How close petals can get before repelling
   REPULSION_STRENGTH: 0.02, // How strongly petals repel
   EDGE_SOFTNESS: 0.2, // How far from bounds to start slowing
@@ -131,7 +124,7 @@ export function NeuromosaicBlobs() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [debugMode]);
 
-  let sceneBounding = (
+  const sceneBounding = (
     <>
       <Scene3D debugMode={debugMode} />
       {debugMode && <BoundingBoxes />}
@@ -210,8 +203,9 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
 
   // Adjust to taste
   const PETAL_COUNT = 8;
-  const STEP_COUNT = 64;
-  const SURF_DIST = 0.002;
+  // These constants are used in the shader, keeping them for documentation
+  // const STEP_COUNT = 64;
+  // const SURF_DIST = 0.002;
 
   // 1) Random petal data
   const petalData = useMemo<PetalData[]>(() => {
@@ -274,42 +268,45 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
         const height = window.innerHeight;
         materialRef.current.uniforms.uResolution.value.set(width, height);
 
-        // Log canvas dimensions and calculated scene boundaries
-        console.log("\nCanvas/Scene Boundaries:");
-        console.log(`Canvas dimensions: ${width}x${height} pixels`);
-        console.log(`Aspect ratio: ${(width / height).toFixed(3)}`);
+        // Only log if in debug mode
+        if (debugMode) {
+          console.log("\nCanvas/Scene Boundaries:");
+          console.log(`Canvas dimensions: ${width}x${height} pixels`);
+          console.log(`Aspect ratio: ${(width / height).toFixed(3)}`);
 
-        // Calculate scene boundaries at z=0 plane
-        // Using FOV=90° and camera at z=6:
-        const fov = (90 * Math.PI) / 180; // to radians
-        const distance = 6; // camera z position
-        const viewHeight = 2 * Math.tan(fov / 2) * distance;
-        const viewWidth = viewHeight * (width / height);
+          // Calculate scene boundaries at z=0 plane
+          const fov = (90 * Math.PI) / 180; // to radians
+          const distance = 6; // camera z position
+          const viewHeight = 2 * Math.tan(fov / 2) * distance;
+          const viewWidth = viewHeight * (width / height);
 
-        console.log("\nScene boundaries at z=0 plane:");
-        console.log(
-          `Width: ${viewWidth.toFixed(2)} units (±${(viewWidth / 2).toFixed(
-            2
-          )})`
-        );
-        console.log(
-          `Height: ${viewHeight.toFixed(2)} units (±${(viewHeight / 2).toFixed(
-            2
-          )})`
-        );
+          console.log("\nScene boundaries at z=0 plane:");
+          console.log(
+            `Width: ${viewWidth.toFixed(2)} units (±${(viewWidth / 2).toFixed(
+              2
+            )})`
+          );
+          console.log(
+            `Height: ${viewHeight.toFixed(2)} units (±${(
+              viewHeight / 2
+            ).toFixed(2)})`
+          );
+        }
       }
     };
 
-    // Log initial dimensions
-    handleResize();
+    // Log initial dimensions only if in debug mode
+    if (debugMode) {
+      handleResize();
+    }
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [debugMode]);
 
   // Log petal positions and scene occupation
   const logPetalStatus = (time: number) => {
-    if (time - lastLogTime.current >= 10) {
+    if (debugMode && time - lastLogTime.current >= 10) {
       console.log("\n=== Petal Status at time", time.toFixed(2), "===");
 
       // Calculate scene occupation including petal scales
@@ -377,12 +374,52 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
     const mat = materialRef.current;
     if (!mat) return;
     const time = state.clock.getElapsedTime();
+    const dt = state.clock.getDelta(); // Get delta time for physics
 
     mat.uniforms.uTime.value = time;
     logPetalStatus(time);
 
-    // Update each petal's position based on physics
-    petalData.forEach((petal, i) => {
+    // 1) Collision detection & response between petals
+    for (let i = 0; i < petalData.length; i++) {
+      for (let j = i + 1; j < petalData.length; j++) {
+        const a = petalData[i];
+        const b = petalData[j];
+
+        // Vector between centers
+        const diff = new THREE.Vector3().subVectors(a.center, b.center);
+        const dist = diff.length();
+        const minDist = SCENE_PARAMS.REPULSION_RADIUS;
+
+        if (dist < minDist) {
+          // Overlap detected
+          const overlap = minDist - dist;
+          diff.normalize();
+
+          // Push petals apart
+          const push = 0.5 * overlap * SCENE_PARAMS.REPULSION_STRENGTH;
+          a.center.addScaledVector(diff, push);
+          b.center.addScaledVector(diff, -push);
+
+          // Reflect velocities for bouncing effect
+          const relativeVel = new THREE.Vector3().subVectors(
+            a.velocity,
+            b.velocity
+          );
+          const sepSpeed = relativeVel.dot(diff);
+
+          if (sepSpeed < 0) {
+            // There's a closing velocity => bounce
+            const impulse = -1.2 * sepSpeed; // Slightly elastic collision
+            const impulseVec = diff.multiplyScalar(impulse * 0.5);
+            a.velocity.add(impulseVec);
+            b.velocity.sub(impulseVec);
+          }
+        }
+      }
+    }
+
+    // 2) Update positions with velocity and apply bounds
+    petalData.forEach((petal) => {
       // Add some noise to movement
       petal.velocity.add(
         new THREE.Vector3(
@@ -392,42 +429,18 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
         )
       );
 
-      // Apply repulsion from other petals
-      petalData.forEach((other, j) => {
-        if (i !== j) {
-          const diff = new THREE.Vector3().subVectors(
-            petal.center,
-            other.center
-          );
-          const distance = diff.length();
-          if (distance < SCENE_PARAMS.REPULSION_RADIUS) {
-            diff
-              .normalize()
-              .multiplyScalar(
-                SCENE_PARAMS.REPULSION_STRENGTH *
-                  (1 - distance / SCENE_PARAMS.REPULSION_RADIUS)
-              );
-            petal.velocity.add(diff);
-          }
-        }
-      });
+      // Update position with velocity
+      petal.center.addScaledVector(petal.velocity, dt * 60); // Normalize to 60FPS
 
-      // Soft bounds checking - start slowing down near edges
-      const bounds = 1.0;
-      const softness = SCENE_PARAMS.EDGE_SOFTNESS;
-
-      // Handle each axis
-      const axes: Array<"x" | "y" | "z"> = ["x", "y", "z"];
-      axes.forEach((axis) => {
+      // Bounds checking with reflection
+      const bounds = SCENE_PARAMS.PETAL_BOUNDS;
+      (["x", "y", "z"] as const).forEach((axis) => {
         const pos = petal.center[axis];
-        const vel = petal.velocity[axis];
-        const absPos = Math.abs(pos);
-
-        if (absPos > bounds - softness) {
-          // Calculate repulsion from boundary
-          const overlap = absPos - (bounds - softness);
-          const repulsion = -(overlap / softness) * Math.abs(vel) * 2;
-          petal.velocity[axis] += repulsion * Math.sign(pos);
+        const bound = bounds[axis.toUpperCase() as keyof typeof bounds];
+        if (Math.abs(pos) > bound) {
+          petal.velocity[axis] *= -1; // Reflect velocity
+          // Keep within bounds
+          petal.center[axis] = Math.sign(pos) * bound;
         }
       });
 
@@ -443,9 +456,6 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
       else if (speed > SCENE_PARAMS.MAX_SPEED) {
         petal.velocity.normalize().multiplyScalar(SCENE_PARAMS.MAX_SPEED);
       }
-
-      // Update position
-      petal.center.add(petal.velocity);
     });
 
     // Update uniform arrays

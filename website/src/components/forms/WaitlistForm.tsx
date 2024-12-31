@@ -4,6 +4,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/Text";
 
+// Add proper type imports
+import type { JSX as JSXTypes } from "react";
+declare global {
+  namespace JSX {
+    interface IntrinsicElements extends JSXTypes.IntrinsicElements {}
+  }
+}
+
 interface WaitlistFormProps {
   onSuccess?: () => void;
 }
@@ -19,13 +27,14 @@ export function WaitlistForm({ onSuccess }: WaitlistFormProps) {
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email");
-    const interests = formData.get("interests");
 
     try {
       // TODO: Implement actual API call here
+      console.log("Submitting email:", email); // Log email for now
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       onSuccess?.();
-    } catch (err) {
+    } catch (error) {
+      console.error("Error submitting form:", error);
       setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);

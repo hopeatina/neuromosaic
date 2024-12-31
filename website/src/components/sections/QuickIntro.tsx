@@ -119,8 +119,8 @@ export function QuickIntro() {
               Neuromosaic is a distributed platform that brings together
               researchers, developers, and AI enthusiasts to collaboratively
               train and improve machine learning models. By harnessing
-              collective computing power and expertise, we're accelerating the
-              development of more capable and reliable AI systems.
+              collective computing power and expertise, we&apos;re accelerating
+              the development of more capable and reliable AI systems.
             </Text>
           </motion.div>
 
