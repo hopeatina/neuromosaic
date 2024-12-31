@@ -4,6 +4,25 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import "@/styles/globals.css";
 
+declare module "react" {
+  namespace JSX {
+    interface IntrinsicElements {
+      html: React.DetailedHTMLProps<
+        React.HtmlHTMLAttributes<HTMLHtmlElement>,
+        HTMLHtmlElement
+      >;
+      body: React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLBodyElement>,
+        HTMLBodyElement
+      >;
+      main: React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >;
+    }
+  }
+}
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",

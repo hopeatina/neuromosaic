@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { WaitlistForm } from "@/components/forms/WaitlistForm";
 import { cn } from "@/library/utils";
 
 const navigation = [
@@ -17,6 +19,7 @@ const navigation = [
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +38,15 @@ export function Header() {
         isScrolled ? "header-solid" : "header-transparent"
       )}
     >
+      <Modal
+        isOpen={isWaitlistOpen}
+        onOpenChange={setIsWaitlistOpen}
+        title="Join the Waitlist"
+        description="Sign up to be among the first to access our platform when we launch. Early contributors will have the opportunity to shape the future of distributed AI development."
+      >
+        <WaitlistForm onSuccess={() => setIsWaitlistOpen(false)} />
+      </Modal>
+
       <Container className="flex h-full items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
@@ -80,19 +92,18 @@ export function Header() {
               Docs
             </Button>
           </Link>
-          <Link href="/get-involved" className="inline-block">
-            <Button
-              size="sm"
-              className={cn(
-                "transition-colors duration-200",
-                isScrolled
-                  ? "bg-white text-background-dark hover:bg-neutral-200"
-                  : "bg-white/10 text-white hover:bg-white hover:text-background-dark"
-              )}
-            >
-              Join Waitlist
-            </Button>
-          </Link>
+          <Button
+            size="sm"
+            className={cn(
+              "transition-colors duration-200",
+              isScrolled
+                ? "bg-white text-background-dark hover:bg-neutral-200"
+                : "bg-white/10 text-white hover:bg-white hover:text-background-dark"
+            )}
+            onClick={() => setIsWaitlistOpen(true)}
+          >
+            Join Waitlist
+          </Button>
         </div>
       </Container>
     </header>
