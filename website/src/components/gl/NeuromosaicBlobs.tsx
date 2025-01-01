@@ -37,14 +37,14 @@ const SCENE_PARAMS = {
   BOUNDS: 2.5, // increased bounding region for more space
   COLLISION_RADIUS: 0.7, // collision distance
   COLLISION_PUSH: 0.02, // how strongly they push off each other
-  MIN_SPEED: 0.0003,
-  MAX_SPEED: 0.0006,
+  MIN_SPEED: 0.003,
+  MAX_SPEED: 0.006,
   NOISE_STRENGTH: 0.0002, // random force each frame
 
   // Visual parameters
   PETAL_SIZE: {
-    MIN: 0.8, // minimum petal size multiplier
-    MAX: 2.0, // maximum petal size multiplier
+    MIN: 0.08, // minimum petal size multiplier
+    MAX: 0.5, // maximum petal size multiplier
   },
   GRAD_INNER: 0.35, // radial gradient stops
   GRAD_MID: 0.7,

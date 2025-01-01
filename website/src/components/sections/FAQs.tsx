@@ -1,4 +1,7 @@
+"use client";
+
 import { FC } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
 import { useState } from "react";
@@ -6,9 +9,10 @@ import { useState } from "react";
 interface FAQProps {
   question: string;
   answer: string | string[];
+  index: number;
 }
 
-const FAQ: FC<FAQProps> = ({ question, answer }) => {
+const FAQ: FC<FAQProps> = ({ question, answer, index }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const formattedAnswer = Array.isArray(answer) ? (
@@ -22,25 +26,64 @@ const FAQ: FC<FAQProps> = ({ question, answer }) => {
   );
 
   return (
-    <Card
-      className={`p-6 transition-all duration-200 cursor-pointer hover:shadow-md ${
-        isOpen ? "bg-gray-50" : ""
-      }`}
-      onClick={() => setIsOpen(!isOpen)}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      viewport={{ once: true }}
     >
-      <div className="flex justify-between items-start gap-4">
-        <Text variant="h3" className="text-lg font-semibold">
-          {question}
-        </Text>
-        <button
-          className="text-gray-500 transition-transform duration-200"
-          style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-        >
-          ▼
-        </button>
-      </div>
-      {isOpen && <Text className="mt-4 text-gray-600">{formattedAnswer}</Text>}
-    </Card>
+      <Card
+        className={`
+          group p-6 transition-all duration-300 cursor-pointer 
+          hover:shadow-md border border-gray-100
+          ${isOpen ? "bg-gray-50/80" : "bg-white/80"}
+          backdrop-blur-sm
+        `}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="flex justify-between items-start gap-4">
+          <Text
+            variant="h3"
+            className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors duration-300"
+          >
+            {question}
+          </Text>
+          <motion.button
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 group-hover:text-primary transition-colors duration-300"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </motion.button>
+        </div>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <Text className="mt-4 text-gray-600">{formattedAnswer}</Text>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+    </motion.div>
   );
 };
 
@@ -118,20 +161,35 @@ const faqs = [
 
 export const FAQs: FC = () => {
   return (
-    <section className="w-full py-24 bg-white">
-      <div className="container mx-auto px-4">
-        <Text variant="h2" className="text-center mb-4">
-          Frequently Asked Questions
-        </Text>
-        <Text className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-          Have a question that&apos;s not listed here? Feel free to reach out on
-          our community channels or send us an email. We&apos;re always excited
-          to hear from you and help you get started!
-        </Text>
+    <section className="w-full py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="flex flex-col items-center mb-12 md:mb-16"
+          >
+            <Text as="h2" variant="h1" className="text-gradient text-center">
+              Common Questions About Neuromosaic
+            </Text>
+            <Text
+              variant="body-lg"
+              textColor="muted"
+              className="mt-4 max-w-2xl mx-auto text-center"
+            >
+              Find answers to frequently asked questions about our platform,
+              from getting started to advanced usage. Our comprehensive guide
+              helps you understand how Neuromosaic can enhance your AI
+              development workflow.
+            </Text>
+          </motion.div>
+        </div>
 
         <div className="max-w-3xl mx-auto space-y-4">
           {faqs.map((faq, index) => (
-            <FAQ key={index} question={faq.question} answer={faq.answer} />
+            <FAQ key={index} {...faq} index={index} />
           ))}
         </div>
       </div>
