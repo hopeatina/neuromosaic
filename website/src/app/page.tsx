@@ -24,8 +24,7 @@ export default function HomePage() {
       <Modal
         isOpen={isWaitlistOpen}
         onOpenChange={setIsWaitlistOpen}
-        title="Join the Waitlist"
-        description="Sign up to be among the first to access our platform when we launch."
+        size="wide"
       >
         <WaitlistForm onSuccess={() => setIsWaitlistOpen(false)} />
       </Modal>

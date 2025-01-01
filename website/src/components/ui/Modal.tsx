@@ -12,6 +12,7 @@ interface ModalProps {
   description?: string;
   children: React.ReactNode;
   className?: string;
+  size?: "default" | "wide";
 }
 
 export function Modal({
@@ -21,6 +22,7 @@ export function Modal({
   description,
   children,
   className,
+  size = "default",
 }: ModalProps) {
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
@@ -28,9 +30,10 @@ export function Modal({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
         <Dialog.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 max-h-[85vh] w-[90vw] max-w-[450px] translate-x-[-50%] translate-y-[-50%]",
+            "fixed left-[50%] top-[50%] z-50 max-h-[85vh] w-[90vw] translate-x-[-50%] translate-y-[-50%]",
             "bg-white rounded-lg shadow-lg focus:outline-none",
             "overflow-y-auto",
+            size === "default" ? "max-w-[450px]" : "max-w-[520px]",
             className
           )}
         >
@@ -48,7 +51,7 @@ export function Modal({
               </Text>
             </Dialog.Description>
           )}
-          <div className="p-6">{children}</div>
+          <div className={cn("p-6", size === "wide" && "px-4")}>{children}</div>
           <Dialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-neutral-950 focus:ring-offset-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"

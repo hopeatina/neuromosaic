@@ -43,6 +43,7 @@ export function Header() {
         onOpenChange={setIsWaitlistOpen}
         title="Join the Waitlist"
         description="Sign up to be among the first to access our platform when we launch. Early contributors will have the opportunity to shape the future of distributed AI development."
+        size="wide"
       >
         <WaitlistForm onSuccess={() => setIsWaitlistOpen(false)} />
       </Modal>

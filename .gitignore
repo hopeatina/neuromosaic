@@ -152,3 +152,4 @@ ray_results/
 # Quickstart
 neuromosaic_quickstart/
 models/
+.vercel
