@@ -145,7 +145,7 @@ export function QuickIntro() {
                   {highlight.icon}
                 </div>
                 <div>
-                  <Text as="h3" variant="h4" className="mb-2">
+                  <Text as="h3" variant="h3" className="mb-2">
                     {highlight.title}
                   </Text>
                   <Text textColor="muted">{highlight.description}</Text>
