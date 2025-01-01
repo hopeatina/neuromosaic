@@ -31,16 +31,21 @@ const petalColors = [
 /** Scene / physics parameters */
 const SCENE_PARAMS = {
   FOV: 45,
-  CAMERA_Z: 60,
+  CAMERA_Z: 120, // Increased for more zoomed out view
   MAX_PETALS: 30, // maximum shader array size
   PETAL_COUNT: 20, // actual number of petals to simulate
-  BOUNDS: 1, // bounding region ±1.5
+  BOUNDS: 2.5, // increased bounding region for more space
   COLLISION_RADIUS: 0.7, // collision distance
   COLLISION_PUSH: 0.02, // how strongly they push off each other
   MIN_SPEED: 0.0003,
   MAX_SPEED: 0.0006,
   NOISE_STRENGTH: 0.0002, // random force each frame
-  // matching <FloatingPetal> visual approach
+
+  // Visual parameters
+  PETAL_SIZE: {
+    MIN: 0.8, // minimum petal size multiplier
+    MAX: 2.0, // maximum petal size multiplier
+  },
   GRAD_INNER: 0.35, // radial gradient stops
   GRAD_MID: 0.7,
 };
@@ -48,7 +53,8 @@ const SCENE_PARAMS = {
 interface PetalData {
   center: THREE.Vector3;
   velocity: THREE.Vector3;
-  radius: number; // for collisions, e.g. 0.7
+  radius: number;
+  size: number; // Added size property
   colorSet: {
     start: THREE.Color;
     mid: THREE.Color;
@@ -118,7 +124,6 @@ function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
       // random center in ±SCENE_PARAMS.BOUNDS
       const x = (Math.random() - 0.5) * 2 * SCENE_PARAMS.BOUNDS;
       const y = (Math.random() - 0.5) * 2 * SCENE_PARAMS.BOUNDS;
-      // z is not used in fragment, but we keep it for collision complexity
       const z = (Math.random() - 0.5) * 2 * SCENE_PARAMS.BOUNDS;
 
       // random velocity
@@ -126,13 +131,20 @@ function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
       const vy = (Math.random() - 0.5) * 0.002;
       const vz = (Math.random() - 0.5) * 0.002;
 
+      // random size within range
+      const size =
+        SCENE_PARAMS.PETAL_SIZE.MIN +
+        Math.random() *
+          (SCENE_PARAMS.PETAL_SIZE.MAX - SCENE_PARAMS.PETAL_SIZE.MIN);
+
       // random color set
       const c = petalColors[Math.floor(Math.random() * petalColors.length)];
 
       arr.push({
         center: new THREE.Vector3(x, y, z),
         velocity: new THREE.Vector3(vx, vy, vz),
-        radius: SCENE_PARAMS.COLLISION_RADIUS, // collisions
+        radius: SCENE_PARAMS.COLLISION_RADIUS * size, // scale collision radius with size
+        size, // store size for shader
         colorSet: {
           start: new THREE.Color(c.start),
           mid: new THREE.Color(c.mid),
@@ -155,11 +167,18 @@ function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
         return new THREE.Vector3(9999, 9999, 9999); // Far away
       });
 
+    const sizeArray = new Array(SCENE_PARAMS.MAX_PETALS)
+      .fill(null)
+      .map((_, i) => {
+        if (i < actualCount) return petals[i].size;
+        return 0; // Zero size for unused slots
+      });
+
     const startCols = new Array(SCENE_PARAMS.MAX_PETALS)
       .fill(null)
       .map((_, i) => {
         if (i < actualCount) return petals[i].colorSet.start;
-        return new THREE.Color(0x000000); // Black
+        return new THREE.Color(0x000000);
       });
 
     const midCols = new Array(SCENE_PARAMS.MAX_PETALS)
@@ -182,10 +201,9 @@ function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
         value: new THREE.Vector2(window.innerWidth, window.innerHeight),
       },
       uDebug: { value: debugMode },
-      // Pass the actual count for shader loop limit
       uPetalCount: { value: actualCount },
-      // Fixed-size arrays with dummy values beyond actualCount
       uPetalCenters: { value: centerArray },
+      uPetalSizes: { value: sizeArray }, // Added sizes uniform
       uPetalStartCols: { value: startCols },
       uPetalMidCols: { value: midCols },
       uPetalEndCols: { value: endCols },
@@ -291,72 +309,61 @@ function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
 
         // arrays of centers and colors - fixed size
         uniform vec3 uPetalCenters[${SCENE_PARAMS.MAX_PETALS}];
+        uniform float uPetalSizes[${SCENE_PARAMS.MAX_PETALS}];  // Added sizes
         uniform vec3 uPetalStartCols[${SCENE_PARAMS.MAX_PETALS}];
         uniform vec3 uPetalMidCols[${SCENE_PARAMS.MAX_PETALS}];
         uniform vec3 uPetalEndCols[${SCENE_PARAMS.MAX_PETALS}];
 
-        const float GRAD_INNER = ${SCENE_PARAMS.GRAD_INNER.toFixed(2)}; // 0.35 
-        const float GRAD_MID = ${SCENE_PARAMS.GRAD_MID.toFixed(2)};     // 0.70
+        const float GRAD_INNER = ${SCENE_PARAMS.GRAD_INNER.toFixed(2)}; 
+        const float GRAD_MID = ${SCENE_PARAMS.GRAD_MID.toFixed(2)};
 
         varying vec2 vUv;
 
         void main(){
-          // map uv => [-1..1], correct aspect
           vec2 uv = (vUv - 0.5) * 2.0;
           float aspect = uResolution.x / uResolution.y;
           uv.x *= aspect;
 
-          // base color is a dark grey or black
           vec3 finalColor = vec3(0.06, 0.06, 0.1);
           float accumulatedAlpha = 0.0;
 
-          // each petal is basically a radial gradient from center.x, center.z => uv
           for(int i=0; i<${SCENE_PARAMS.MAX_PETALS}; i++){
             if(i >= uPetalCount) break;
             vec2 center = vec2(uPetalCenters[i].x, uPetalCenters[i].z);
 
-            // Distance from uv to center
-            float dx = uv.x - center.x;
-            float dy = uv.y - center.y;
+            // Scale distances by petal size
+            float size = uPetalSizes[i];
+            float dx = (uv.x - center.x) / size;
+            float dy = (uv.y - center.y) / size;
             float dist = sqrt(dx*dx + dy*dy);
 
-            // We'll define the gradient up to dist=1.0
             if(dist < 1.0){
-              // replicate the radial gradient stops from <FloatingPetal>
-              // stop offsets: 0%, 35%, 70%, 100%
-              // color transitions from start->mid->end
               vec3 colStart = uPetalStartCols[i];
               vec3 colMid   = uPetalMidCols[i];
               vec3 colEnd   = uPetalEndCols[i];
 
-              // we define alpha based on dist
               float alpha = 1.0;
               vec3 color;
 
               if(dist < GRAD_INNER){
-                // 0..0.35 => from 0.85 alpha to ~0.6
                 float t = dist / GRAD_INNER;
-                color = mix(colStart, colStart, t); // basically colStart
+                color = mix(colStart, colStart, t);
                 alpha = mix(0.85, 0.6, t);
               }
               else if(dist < GRAD_MID){
-                // 0.35..0.70 => transition colStart->colMid
                 float t = (dist - GRAD_INNER)/(GRAD_MID - GRAD_INNER);
                 color = mix(colStart, colMid, t);
                 alpha = mix(0.4, 0.25, t);
               }
               else{
-                // 0.70..1.00 => colMid->colEnd
                 float t = (dist - GRAD_MID)/(1.0 - GRAD_MID);
                 color = mix(colMid, colEnd, t);
                 alpha = mix(0.25, 0.15, t);
               }
 
-              // optional subtle pulsing
               float pulse = sin(uTime * 0.4) * 0.05 + 0.95;
               color *= pulse;
 
-              // alpha blending
               float blend = alpha * (1.0 - accumulatedAlpha);
               finalColor = mix(finalColor, color, blend);
               accumulatedAlpha += blend;
@@ -364,7 +371,6 @@ function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
           }
 
           if(uDebug){
-            // show alpha accumulation in grayscale
             finalColor = vec3(accumulatedAlpha);
           }
 
