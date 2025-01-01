@@ -85,7 +85,7 @@ const SCENE_PARAMS = {
   },
   SIZE: {
     MIN: 2,
-    MAX: 12,
+    MAX: 42,
   },
   SHAPE: {
     MIN: 1, // More circular
@@ -103,7 +103,7 @@ const SCENE_PARAMS = {
   REPULSION_RADIUS: 0.8, // How close petals can get before repelling
   REPULSION_STRENGTH: 0.02, // How strongly petals repel
   EDGE_SOFTNESS: 0.2, // How far from bounds to start slowing
-  DAMPING: 0.98, // Speed reduction factor
+  DAMPING: 1, // Speed reduction factor
   NOISE_STRENGTH: 0.0001, // Random movement strength
 
   // Field rendering
@@ -412,7 +412,7 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
       });
 
       // Apply damping
-      petal.velocity.multiplyScalar(SCENE_PARAMS.DAMPING);
+      // petal.velocity.multiplyScalar(SCENE_PARAMS.DAMPING);
 
       // Ensure minimum speed
       const speed = petal.velocity.length();
