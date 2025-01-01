@@ -4,7 +4,10 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import "@/styles/globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Neuromosaic",
@@ -17,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="flex min-h-screen flex-col">
+    <html lang="en" className={`${inter.variable}`}>
+      <body className="flex min-h-screen flex-col font-sans">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

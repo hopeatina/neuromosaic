@@ -312,7 +312,7 @@ function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
       petalCount: petalData.length,
       isDebugMode: debugMode,
     };
-    console.log("Petal Status:", status);
+    // console.log("Petal Status:", status);
   };
 
   // 2) Uniforms
