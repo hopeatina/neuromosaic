@@ -4,10 +4,7 @@ import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef, useMemo, useEffect, useState } from "react";
 
-// No need for custom type declarations as @react-three/fiber already provides these
-// The library already handles the proper typing for Three.js elements
-
-// Petal color combos (matching FloatingPetal.tsx)
+/** Petal color combos, matching <FloatingPetal> */
 const petalColors = [
   {
     start: "#2e2066", // Deep purple
@@ -31,106 +28,46 @@ const petalColors = [
   },
 ];
 
+/** Scene / physics parameters */
+const SCENE_PARAMS = {
+  FOV: 45,
+  CAMERA_Z: 60,
+  MAX_PETALS: 30, // maximum shader array size
+  PETAL_COUNT: 20, // actual number of petals to simulate
+  BOUNDS: 1, // bounding region ±1.5
+  COLLISION_RADIUS: 0.7, // collision distance
+  COLLISION_PUSH: 0.02, // how strongly they push off each other
+  MIN_SPEED: 0.0003,
+  MAX_SPEED: 0.0006,
+  NOISE_STRENGTH: 0.0002, // random force each frame
+  // matching <FloatingPetal> visual approach
+  GRAD_INNER: 0.35, // radial gradient stops
+  GRAD_MID: 0.7,
+};
+
 interface PetalData {
   center: THREE.Vector3;
-  scale: THREE.Vector3;
-  twist: number;
   velocity: THREE.Vector3;
-  colors: {
+  radius: number; // for collisions, e.g. 0.7
+  colorSet: {
     start: THREE.Color;
     mid: THREE.Color;
     end: THREE.Color;
   };
-  size: number; // Overall size multiplier
-  rotation: number; // Base rotation
-  shape: number; // Shape variation factor
 }
 
-interface SdfUniforms {
-  [key: string]: THREE.IUniform<any>;
-  uTime: { value: number };
-  uResolution: { value: THREE.Vector2 };
-  uPetalCount: { value: number };
-  uPetalCenters: { value: THREE.Vector3[] };
-  uPetalScales: { value: THREE.Vector3[] };
-  uPetalTwists: { value: number[] };
-  uPetalColorsStart: { value: THREE.Color[] };
-  uPetalColorsMid: { value: THREE.Color[] };
-  uPetalColorsEnd: { value: THREE.Color[] };
-  uPetalSizes: { value: number[] };
-  uPetalRotations: { value: number[] };
-  uPetalShapes: { value: number[] };
-  uDebugMode: { value: boolean };
-}
-
-// Scene parameters
-const SCENE_PARAMS = {
-  // Camera settings
-  FOV: 45,
-  CAMERA_Z: 6,
-  NEAR_PLANE: -2,
-  FAR_PLANE: 2,
-
-  // Petal settings
-  PETAL_COUNT: 30,
-  PETAL_SPAWN_RANGE: {
-    X: 1.2,
-    Y: 1.2,
-    Z: 1.2,
-  },
-  PETAL_SCALE: {
-    X: { MIN: 3, MAX: 9 }, // More variation
-    Y: { MIN: 6, MAX: 16 }, // More variation
-    Z: { MIN: 1.5, MAX: 4.5 }, // More variation
-  },
-  SIZE: {
-    MIN: 2,
-    MAX: 42,
-  },
-  SHAPE: {
-    MIN: 1, // More circular
-    MAX: 1, // More elongated
-  },
-  PETAL_BOUNDS: {
-    X: 1.2,
-    Y: 1.2,
-    Z: 1.2,
-  },
-
-  // Movement settings
-  MIN_SPEED: 0.0003, // Minimum speed to maintain
-  MAX_SPEED: 0.0006, // Maximum speed cap
-  REPULSION_RADIUS: 0.8, // How close petals can get before repelling
-  REPULSION_STRENGTH: 0.02, // How strongly petals repel
-  EDGE_SOFTNESS: 0.2, // How far from bounds to start slowing
-  DAMPING: 1, // Speed reduction factor
-  NOISE_STRENGTH: 0.0001, // Random movement strength
-
-  // Field rendering
-  FIELD_RADIUS: 0.005,
-  FIELD_SMOOTHING: 0.02,
-};
-
+/** Root component */
 export function NeuromosaicBlobs() {
   const [debugMode, setDebugMode] = useState(false);
 
+  // Toggle debug with "d" key
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "d") {
-        setDebugMode((prev) => !prev);
-        console.log("Debug mode:", !debugMode);
-      }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "d") setDebugMode((prev) => !prev);
     };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [debugMode]);
-
-  const sceneBounding = (
-    <>
-      <Scene3D debugMode={debugMode} />
-      {debugMode && <BoundingBoxes />}
-    </>
-  );
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
 
   return (
     <Canvas
@@ -142,455 +79,296 @@ export function NeuromosaicBlobs() {
       }}
       gl={{ alpha: false, antialias: true }}
     >
-      {sceneBounding}
+      <MetaballScene debugMode={debugMode} />
     </Canvas>
   );
 }
 
-function BoundingBoxes() {
-  // Calculate box dimensions based on FOV and camera distance
+/**
+ * The main scene: a single big plane that we raymarch with
+ * a pseudo "petal" radial gradient approach
+ */
+function MetaballScene({ debugMode }: { debugMode: boolean }) {
+  // match the plane to the camera's view size
   const fovRad = (SCENE_PARAMS.FOV * Math.PI) / 180;
   const viewHeight = 2 * Math.tan(fovRad / 2) * SCENE_PARAMS.CAMERA_Z;
   const viewWidth = viewHeight * (window.innerWidth / window.innerHeight);
 
   return (
-    <>
-      {/* Scene boundaries at z=0 plane */}
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[viewWidth, viewHeight, 0.02]} />
-        <meshBasicMaterial color="green" wireframe={true} />
-      </mesh>
-
-      {/* Camera frustum near plane */}
-      <mesh position={[0, 0, SCENE_PARAMS.NEAR_PLANE]}>
-        <boxGeometry args={[viewWidth * 0.67, viewHeight * 0.67, 0.02]} />
-        <meshBasicMaterial color="lime" wireframe={true} />
-      </mesh>
-
-      {/* Camera frustum far plane */}
-      <mesh position={[0, 0, SCENE_PARAMS.FAR_PLANE]}>
-        <boxGeometry args={[viewWidth * 1.33, viewHeight * 1.33, 0.02]} />
-        <meshBasicMaterial color="lime" wireframe={true} />
-      </mesh>
-    </>
-  );
-}
-
-function Scene3D({ debugMode }: { debugMode: boolean }) {
-  // Calculate scale based on FOV and camera distance to match viewport exactly
-  const fovRad = (SCENE_PARAMS.FOV * Math.PI) / 180;
-  const viewHeight = 2 * Math.tan(fovRad / 2) * SCENE_PARAMS.CAMERA_Z;
-  const viewWidth = viewHeight * (window.innerWidth / window.innerHeight);
-
-  // Since our plane is 1x1, we need to scale it to match the view dimensions
-  const scaleX = viewWidth;
-  const scaleY = viewHeight;
-
-  return (
-    <mesh rotation={[0, 0, 0]} scale={[scaleX, scaleY, 1]}>
+    <mesh scale={[viewWidth, viewHeight, 1]}>
       <planeGeometry args={[1, 1]} />
-      <RaymarchedPetals debugMode={debugMode} />
+      <PetalMetaballs debugMode={debugMode} />
     </mesh>
   );
 }
 
 /**
- * RaymarchedPetals:
- * - Replaces sphere SDF with a "petal-like" ellipsoid + twist
- * - Unions multiple petals in the scene for an organic swirl
+ * PetalMetaballs:
+ * - Takes N petals, each with a center + velocity.
+ * - Collisions keep them moving, random noise prevents them from halting.
+ * - The fragment shader draws a radial gradient for each petal, blending them.
  */
-function RaymarchedPetals({ debugMode }: { debugMode: boolean }) {
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
+function PetalMetaballs({ debugMode }: { debugMode: boolean }) {
+  const matRef = useRef<THREE.ShaderMaterial>(null);
 
-  // Adjust to taste
-  const PETAL_COUNT = 8;
-  // These constants are used in the shader, keeping them for documentation
-  // const STEP_COUNT = 64;
-  // const SURF_DIST = 0.002;
-
-  // 1) Random petal data
-  const petalData = useMemo<PetalData[]>(() => {
-    const petals: PetalData[] = [];
+  // 1) Create random petals
+  const petals = useMemo<PetalData[]>(() => {
+    const arr: PetalData[] = [];
     for (let i = 0; i < SCENE_PARAMS.PETAL_COUNT; i++) {
-      // Random position
-      const cx = (Math.random() - 0.5) * SCENE_PARAMS.PETAL_SPAWN_RANGE.X * 2;
-      const cy = (Math.random() - 0.5) * SCENE_PARAMS.PETAL_SPAWN_RANGE.Y * 2;
-      const cz = (Math.random() - 0.5) * SCENE_PARAMS.PETAL_SPAWN_RANGE.Z * 2;
+      // random center in ±SCENE_PARAMS.BOUNDS
+      const x = (Math.random() - 0.5) * 2 * SCENE_PARAMS.BOUNDS;
+      const y = (Math.random() - 0.5) * 2 * SCENE_PARAMS.BOUNDS;
+      // z is not used in fragment, but we keep it for collision complexity
+      const z = (Math.random() - 0.5) * 2 * SCENE_PARAMS.BOUNDS;
 
-      // Random scale
-      const sx =
-        SCENE_PARAMS.PETAL_SCALE.X.MIN +
-        Math.random() *
-          (SCENE_PARAMS.PETAL_SCALE.X.MAX - SCENE_PARAMS.PETAL_SCALE.X.MIN);
-      const sy =
-        SCENE_PARAMS.PETAL_SCALE.Y.MIN +
-        Math.random() *
-          (SCENE_PARAMS.PETAL_SCALE.Y.MAX - SCENE_PARAMS.PETAL_SCALE.Y.MIN);
-      const sz =
-        SCENE_PARAMS.PETAL_SCALE.Z.MIN +
-        Math.random() *
-          (SCENE_PARAMS.PETAL_SCALE.Z.MAX - SCENE_PARAMS.PETAL_SCALE.Z.MIN);
+      // random velocity
+      const vx = (Math.random() - 0.5) * 0.002;
+      const vy = (Math.random() - 0.5) * 0.002;
+      const vz = (Math.random() - 0.5) * 0.002;
 
-      // Random color scheme
-      const colorScheme =
-        petalColors[Math.floor(Math.random() * petalColors.length)];
+      // random color set
+      const c = petalColors[Math.floor(Math.random() * petalColors.length)];
 
-      petals.push({
-        center: new THREE.Vector3(cx, cy, cz),
-        scale: new THREE.Vector3(sx, sy, sz),
-        twist: Math.random() * 2.0,
-        velocity: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.002,
-          (Math.random() - 0.5) * 0.002,
-          (Math.random() - 0.5) * 0.002
-        ),
-        colors: {
-          start: new THREE.Color(colorScheme.start),
-          mid: new THREE.Color(colorScheme.mid),
-          end: new THREE.Color(colorScheme.end),
+      arr.push({
+        center: new THREE.Vector3(x, y, z),
+        velocity: new THREE.Vector3(vx, vy, vz),
+        radius: SCENE_PARAMS.COLLISION_RADIUS, // collisions
+        colorSet: {
+          start: new THREE.Color(c.start),
+          mid: new THREE.Color(c.mid),
+          end: new THREE.Color(c.end),
         },
-        size:
-          SCENE_PARAMS.SIZE.MIN +
-          Math.random() * (SCENE_PARAMS.SIZE.MAX - SCENE_PARAMS.SIZE.MIN),
-        rotation: Math.random() * Math.PI * 2,
-        shape:
-          SCENE_PARAMS.SHAPE.MIN +
-          Math.random() * (SCENE_PARAMS.SHAPE.MAX - SCENE_PARAMS.SHAPE.MIN),
       });
     }
-    return petals;
+    return arr;
   }, []);
 
-  // Handle window resize and log viewport info
-  useEffect(() => {
-    const handleResize = () => {
-      if (materialRef.current) {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        materialRef.current.uniforms.uResolution.value.set(width, height);
+  // 2) Build uniforms with fixed-size arrays
+  const uniforms = useMemo(() => {
+    const actualCount = petals.length;
 
-        // Only log if in debug mode
-        if (debugMode) {
-          console.log("\nCanvas/Scene Boundaries:");
-          console.log(`Canvas dimensions: ${width}x${height} pixels`);
-          console.log(`Aspect ratio: ${(width / height).toFixed(3)}`);
+    // Create fixed-size arrays with dummy values beyond actualCount
+    const centerArray = new Array(SCENE_PARAMS.MAX_PETALS)
+      .fill(null)
+      .map((_, i) => {
+        if (i < actualCount) return petals[i].center;
+        return new THREE.Vector3(9999, 9999, 9999); // Far away
+      });
 
-          // Calculate scene boundaries at z=0 plane
-          const fov = (90 * Math.PI) / 180; // to radians
-          const distance = 6; // camera z position
-          const viewHeight = 2 * Math.tan(fov / 2) * distance;
-          const viewWidth = viewHeight * (width / height);
+    const startCols = new Array(SCENE_PARAMS.MAX_PETALS)
+      .fill(null)
+      .map((_, i) => {
+        if (i < actualCount) return petals[i].colorSet.start;
+        return new THREE.Color(0x000000); // Black
+      });
 
-          console.log("\nScene boundaries at z=0 plane:");
-          console.log(
-            `Width: ${viewWidth.toFixed(2)} units (±${(viewWidth / 2).toFixed(
-              2
-            )})`
-          );
-          console.log(
-            `Height: ${viewHeight.toFixed(2)} units (±${(
-              viewHeight / 2
-            ).toFixed(2)})`
-          );
-        }
-      }
-    };
+    const midCols = new Array(SCENE_PARAMS.MAX_PETALS)
+      .fill(null)
+      .map((_, i) => {
+        if (i < actualCount) return petals[i].colorSet.mid;
+        return new THREE.Color(0x000000);
+      });
 
-    // Log initial dimensions only if in debug mode
-    if (debugMode) {
-      handleResize();
-    }
+    const endCols = new Array(SCENE_PARAMS.MAX_PETALS)
+      .fill(null)
+      .map((_, i) => {
+        if (i < actualCount) return petals[i].colorSet.end;
+        return new THREE.Color(0x000000);
+      });
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [debugMode]);
-
-  // Log petal positions and scene occupation
-  const logPetalStatus = (time: number) => {
-    const status: Record<string, number | boolean> = {
-      time,
-      petalCount: petalData.length,
-      isDebugMode: debugMode,
-    };
-    // console.log("Petal Status:", status);
-  };
-
-  // 2) Uniforms
-  const uniforms = useMemo<SdfUniforms>(() => {
     return {
       uTime: { value: 0 },
       uResolution: {
         value: new THREE.Vector2(window.innerWidth, window.innerHeight),
       },
-      uPetalCount: { value: PETAL_COUNT },
-      uPetalCenters: { value: petalData.map((p) => p.center) },
-      uPetalScales: { value: petalData.map((p) => p.scale) },
-      uPetalTwists: { value: petalData.map((p) => p.twist) },
-      uPetalColorsStart: { value: petalData.map((p) => p.colors.start) },
-      uPetalColorsMid: { value: petalData.map((p) => p.colors.mid) },
-      uPetalColorsEnd: { value: petalData.map((p) => p.colors.end) },
-      uPetalSizes: { value: petalData.map((p) => p.size) },
-      uPetalRotations: { value: petalData.map((p) => p.rotation) },
-      uPetalShapes: { value: petalData.map((p) => p.shape) },
-      uDebugMode: { value: debugMode },
+      uDebug: { value: debugMode },
+      // Pass the actual count for shader loop limit
+      uPetalCount: { value: actualCount },
+      // Fixed-size arrays with dummy values beyond actualCount
+      uPetalCenters: { value: centerArray },
+      uPetalStartCols: { value: startCols },
+      uPetalMidCols: { value: midCols },
+      uPetalEndCols: { value: endCols },
     };
-  }, [petalData, debugMode]);
+  }, [petals, debugMode]);
 
-  // 3) Animation with improved physics
-  useFrame((state) => {
-    const mat = materialRef.current;
-    if (!mat) return;
-    const time = state.clock.getElapsedTime();
-    const dt = state.clock.getDelta(); // Get delta time for physics
+  // 3) Animate (collisions, random noise, bounding)
+  useFrame((state, delta) => {
+    const dt = delta * 60; // ~ normalized for 60fps
+    const t = state.clock.getElapsedTime();
 
-    mat.uniforms.uTime.value = time;
-    logPetalStatus(time);
-
-    // 1) Collision detection & response between petals
-    for (let i = 0; i < petalData.length; i++) {
-      for (let j = i + 1; j < petalData.length; j++) {
-        const a = petalData[i];
-        const b = petalData[j];
-
-        // Vector between centers
-        const diff = new THREE.Vector3().subVectors(a.center, b.center);
+    // keep them moving
+    petals.forEach((petal) => {
+      // collision check with others
+      petals.forEach((other) => {
+        if (other === petal) return;
+        const diff = new THREE.Vector3().subVectors(petal.center, other.center);
         const dist = diff.length();
-        const minDist = SCENE_PARAMS.REPULSION_RADIUS;
-
-        if (dist < minDist) {
-          // Overlap detected
-          const overlap = minDist - dist;
+        if (dist < petal.radius + other.radius) {
+          // push them apart
+          const overlap = petal.radius + other.radius - dist;
           diff.normalize();
-
-          // Push petals apart
-          const push = 0.5 * overlap * SCENE_PARAMS.REPULSION_STRENGTH;
-          a.center.addScaledVector(diff, push);
-          b.center.addScaledVector(diff, -push);
-
-          // Reflect velocities for bouncing effect
-          const relativeVel = new THREE.Vector3().subVectors(
-            a.velocity,
-            b.velocity
+          petal.center.addScaledVector(
+            diff,
+            overlap * 0.5 * SCENE_PARAMS.COLLISION_PUSH
           );
-          const sepSpeed = relativeVel.dot(diff);
+          other.center.addScaledVector(
+            diff,
+            -overlap * 0.5 * SCENE_PARAMS.COLLISION_PUSH
+          );
 
-          if (sepSpeed < 0) {
-            // There's a closing velocity => bounce
-            const impulse = -1.2 * sepSpeed; // Slightly elastic collision
-            const impulseVec = diff.multiplyScalar(impulse * 0.5);
-            a.velocity.add(impulseVec);
-            b.velocity.sub(impulseVec);
+          // basic bounce
+          const relVel = new THREE.Vector3().subVectors(
+            petal.velocity,
+            other.velocity
+          );
+          const speed = relVel.dot(diff);
+          if (speed < 0) {
+            const impulse = -1.2 * speed;
+            diff.multiplyScalar(impulse * 0.5);
+            petal.velocity.add(diff);
+            other.velocity.sub(diff);
           }
-        }
-      }
-    }
-
-    // 2) Update positions with velocity and apply bounds
-    petalData.forEach((petal) => {
-      // Add some noise to movement
-      petal.velocity.add(
-        new THREE.Vector3(
-          (Math.random() - 0.5) * SCENE_PARAMS.NOISE_STRENGTH,
-          (Math.random() - 0.5) * SCENE_PARAMS.NOISE_STRENGTH,
-          (Math.random() - 0.5) * SCENE_PARAMS.NOISE_STRENGTH
-        )
-      );
-
-      // Update position with velocity
-      petal.center.addScaledVector(petal.velocity, dt * 60); // Normalize to 60FPS
-
-      // Bounds checking with reflection
-      const bounds = SCENE_PARAMS.PETAL_BOUNDS;
-      (["x", "y", "z"] as const).forEach((axis) => {
-        const pos = petal.center[axis];
-        const bound = bounds[axis.toUpperCase() as keyof typeof bounds];
-        if (Math.abs(pos) > bound) {
-          petal.velocity[axis] *= -1; // Reflect velocity
-          // Keep within bounds
-          petal.center[axis] = Math.sign(pos) * bound;
         }
       });
 
-      // Apply damping
-      // petal.velocity.multiplyScalar(SCENE_PARAMS.DAMPING);
+      // random noise to ensure perpetual motion
+      petal.velocity.x += (Math.random() - 0.5) * SCENE_PARAMS.NOISE_STRENGTH;
+      petal.velocity.y += (Math.random() - 0.5) * SCENE_PARAMS.NOISE_STRENGTH;
+      petal.velocity.z += (Math.random() - 0.5) * SCENE_PARAMS.NOISE_STRENGTH;
 
-      // Ensure minimum speed
-      const speed = petal.velocity.length();
-      if (speed < SCENE_PARAMS.MIN_SPEED) {
+      // update position
+      petal.center.addScaledVector(petal.velocity, dt);
+
+      // bounds check => bounce
+      (["x", "y", "z"] as const).forEach((axis) => {
+        const val = petal.center[axis];
+        if (Math.abs(val) > SCENE_PARAMS.BOUNDS) {
+          petal.velocity[axis] *= -1;
+          petal.center[axis] = Math.sign(val) * SCENE_PARAMS.BOUNDS;
+        }
+      });
+
+      // clamp speed
+      const speedLen = petal.velocity.length();
+      if (speedLen < SCENE_PARAMS.MIN_SPEED) {
         petal.velocity.normalize().multiplyScalar(SCENE_PARAMS.MIN_SPEED);
-      }
-      // Cap maximum speed
-      else if (speed > SCENE_PARAMS.MAX_SPEED) {
+      } else if (speedLen > SCENE_PARAMS.MAX_SPEED) {
         petal.velocity.normalize().multiplyScalar(SCENE_PARAMS.MAX_SPEED);
       }
     });
 
-    // Update uniform arrays
-    mat.uniforms.uPetalCenters.value = petalData.map((p) => p.center);
+    // update uniforms - only need to update centers since colors don't change
+    if (matRef.current) {
+      matRef.current.uniforms.uTime.value = t;
+      // Update centers array while preserving dummy values
+      const centerArray = matRef.current.uniforms.uPetalCenters.value;
+      petals.forEach((p, i) => {
+        centerArray[i].copy(p.center);
+      });
+    }
   });
 
-  // 4) Shader material
+  // 4) The fragment shader to replicate FloatingPetal's radial gradient + transparency.
   return (
     <shaderMaterial
-      ref={materialRef}
-      uniforms={uniforms as THREE.ShaderMaterialParameters["uniforms"]}
+      ref={matRef}
+      uniforms={uniforms}
       vertexShader={`
         varying vec2 vUv;
         void main() {
           vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
         }
       `}
       fragmentShader={`
+        precision highp float;
+
         uniform float uTime;
         uniform vec2 uResolution;
+        uniform bool uDebug;
         uniform int uPetalCount;
-        uniform vec3 uPetalCenters[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform vec3 uPetalScales[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform float uPetalTwists[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform vec3 uPetalColorsStart[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform vec3 uPetalColorsMid[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform vec3 uPetalColorsEnd[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform float uPetalSizes[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform float uPetalRotations[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform float uPetalShapes[${SCENE_PARAMS.PETAL_COUNT}];
-        uniform bool uDebugMode;
-        
+
+        // arrays of centers and colors - fixed size
+        uniform vec3 uPetalCenters[${SCENE_PARAMS.MAX_PETALS}];
+        uniform vec3 uPetalStartCols[${SCENE_PARAMS.MAX_PETALS}];
+        uniform vec3 uPetalMidCols[${SCENE_PARAMS.MAX_PETALS}];
+        uniform vec3 uPetalEndCols[${SCENE_PARAMS.MAX_PETALS}];
+
+        const float GRAD_INNER = ${SCENE_PARAMS.GRAD_INNER.toFixed(2)}; // 0.35 
+        const float GRAD_MID = ${SCENE_PARAMS.GRAD_MID.toFixed(2)};     // 0.70
+
         varying vec2 vUv;
 
-        // Rotation matrix function
-        mat2 rotate2D(float angle) {
-          float s = sin(angle);
-          float c = cos(angle);
-          return mat2(c, -s, s, c);
-        }
-        
-        // Noise function for organic movement
-        float noise(vec2 p) {
-          vec2 ip = floor(p);
-          vec2 fp = fract(p);
-          fp = fp * fp * (3.0 - 2.0 * fp);
-          
-          float n = mix(
-            mix(sin(dot(ip, vec2(12.9898, 78.233))),
-                sin(dot(ip + vec2(1.0, 0.0), vec2(12.9898, 78.233))), fp.x),
-            mix(sin(dot(ip + vec2(0.0, 1.0), vec2(12.9898, 78.233))),
-                sin(dot(ip + vec2(1.0, 1.0), vec2(12.9898, 78.233))), fp.x),
-            fp.y
-          );
-          return n * 0.5 + 0.5;
-        }
-        
-        // Improved blob shape function with internal morphing
-        float blobShape(vec2 uv, vec2 center, float size, float rotation, float shape, float time) {
-          // Apply rotation
-          vec2 p = uv - center;
-          p = rotate2D(rotation) * p;
-          
-          // Scale by size
-          p /= size;
-          
-          // Base shape
-          float r = length(p);
-          float angle = atan(p.y, p.x);
-          
-          // Add multiple layers of noise-based deformation
-          float deform = 0.0;
-          
-          // Layer 1: Slow, large deformation
-          deform += noise(vec2(angle * 2.0 + time * 0.1, time * 0.05)) * 0.3;
-          
-          // Layer 2: Medium frequency wobble
-          deform += noise(vec2(angle * 4.0 + time * 0.2, time * 0.1)) * 0.2;
-          
-          // Layer 3: Fast, small details
-          deform += noise(vec2(angle * 8.0 + time * 0.4, time * 0.2)) * 0.1;
-          
-          // Combine deformations with base radius
-          float modifiedRadius = r * (1.0 + deform * shape);
-          
-          return modifiedRadius;
-        }
-        
-        // Get layered color based on radius, matching FloatingPetal's radial gradient
-        vec4 getLayeredColor(float radius, vec3 startColor, vec3 midColor, vec3 endColor) {
-          // Match FloatingPetal's gradient stops: 0%, 35%, 70%, 100%
-          float opacity = 1.0;
-          vec3 color;
-          
-          if (radius < 0.35) {
-            // Inner core: start color with high opacity
-            color = startColor;
-            opacity = mix(0.85, 0.6, radius / 0.35);
-          } 
-          else if (radius < 0.7) {
-            // Middle layer: transition to mid color with medium opacity
-            float t = (radius - 0.35) / 0.35;
-            color = mix(startColor, midColor, t);
-            opacity = mix(0.4, 0.25, t);
-          }
-          else {
-            // Outer edge: transition to end color with low opacity
-            float t = (radius - 0.7) / 0.3;
-            color = mix(midColor, endColor, t);
-            opacity = mix(0.25, 0.15, t);
-          }
-          
-          return vec4(color, opacity);
-        }
-        
-        void main() {
-          // Scale UV to [-1,1] range with aspect correction
+        void main(){
+          // map uv => [-1..1], correct aspect
           vec2 uv = (vUv - 0.5) * 2.0;
           float aspect = uResolution.x / uResolution.y;
           uv.x *= aspect;
-          
-          // Calculate scene color
-          vec3 color = vec3(0.047, 0.047, 0.11);  // Dark background
-          float totalOpacity = 0.0;
-          
-          // Sum contribution from all petals
-          for(int i = 0; i < ${SCENE_PARAMS.PETAL_COUNT}; i++) {
-            vec3 center = uPetalCenters[i];
-            vec2 petalPos = center.xz;
-            
-            // Calculate blob shape
-            float radius = blobShape(
-              uv, 
-              petalPos, 
-              uPetalSizes[i] * ${SCENE_PARAMS.FIELD_RADIUS.toFixed(3)},
-              uPetalRotations[i] + uTime * 0.1,
-              uPetalShapes[i],
-              uTime
-            );
-            
-            // Only process if within maximum radius
-            if (radius < 1.0) {
-              // Get layered colors and opacity
-              vec4 layerColor = getLayeredColor(
-                radius,
-                uPetalColorsStart[i],
-                uPetalColorsMid[i],
-                uPetalColorsEnd[i]
-              );
-              
-              // Add subtle pulse effect
-              float pulse = sin(uTime * 0.5) * 0.1 + 0.9;
-              layerColor.rgb *= pulse;
-              
-              // Blend with accumulated color using opacity
-              float alpha = layerColor.a * (1.0 - totalOpacity);
-              color = mix(color, layerColor.rgb, alpha);
-              totalOpacity = totalOpacity + alpha;
+
+          // base color is a dark grey or black
+          vec3 finalColor = vec3(0.06, 0.06, 0.1);
+          float accumulatedAlpha = 0.0;
+
+          // each petal is basically a radial gradient from center.x, center.z => uv
+          for(int i=0; i<${SCENE_PARAMS.MAX_PETALS}; i++){
+            if(i >= uPetalCount) break;
+            vec2 center = vec2(uPetalCenters[i].x, uPetalCenters[i].z);
+
+            // Distance from uv to center
+            float dx = uv.x - center.x;
+            float dy = uv.y - center.y;
+            float dist = sqrt(dx*dx + dy*dy);
+
+            // We'll define the gradient up to dist=1.0
+            if(dist < 1.0){
+              // replicate the radial gradient stops from <FloatingPetal>
+              // stop offsets: 0%, 35%, 70%, 100%
+              // color transitions from start->mid->end
+              vec3 colStart = uPetalStartCols[i];
+              vec3 colMid   = uPetalMidCols[i];
+              vec3 colEnd   = uPetalEndCols[i];
+
+              // we define alpha based on dist
+              float alpha = 1.0;
+              vec3 color;
+
+              if(dist < GRAD_INNER){
+                // 0..0.35 => from 0.85 alpha to ~0.6
+                float t = dist / GRAD_INNER;
+                color = mix(colStart, colStart, t); // basically colStart
+                alpha = mix(0.85, 0.6, t);
+              }
+              else if(dist < GRAD_MID){
+                // 0.35..0.70 => transition colStart->colMid
+                float t = (dist - GRAD_INNER)/(GRAD_MID - GRAD_INNER);
+                color = mix(colStart, colMid, t);
+                alpha = mix(0.4, 0.25, t);
+              }
+              else{
+                // 0.70..1.00 => colMid->colEnd
+                float t = (dist - GRAD_MID)/(1.0 - GRAD_MID);
+                color = mix(colMid, colEnd, t);
+                alpha = mix(0.25, 0.15, t);
+              }
+
+              // optional subtle pulsing
+              float pulse = sin(uTime * 0.4) * 0.05 + 0.95;
+              color *= pulse;
+
+              // alpha blending
+              float blend = alpha * (1.0 - accumulatedAlpha);
+              finalColor = mix(finalColor, color, blend);
+              accumulatedAlpha += blend;
             }
           }
-          
-          if (uDebugMode) {
-            // Debug mode: Show opacity values in grayscale
-            color = vec3(totalOpacity);
+
+          if(uDebug){
+            // show alpha accumulation in grayscale
+            finalColor = vec3(accumulatedAlpha);
           }
-          
-          gl_FragColor = vec4(color, 1.0);
+
+          gl_FragColor = vec4(finalColor, 1.0);
         }
       `}
     />
