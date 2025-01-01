@@ -189,33 +189,17 @@ function FlywheelRing({
   }[];
   ringSize: number;
 }) {
-  // We want 5 positions: top, right, bottom, left, center
-  // Let's define them as percentages or pixel offsets
-  // from the ring's center. ringSize=600 => radius=300
-  // We'll place them so each card is well spaced.
   const radius = ringSize / 2;
 
-  // Example positions (x,y) from ring center:
-  // top => (0, -radius)
-  // right => (radius, 0)
-  // bottom => (0, radius)
-  // left => (-radius, 0)
-  // center => (0,0)
-
-  const positions = [
-    { x: 0, y: -radius }, // top
-    { x: radius, y: 0 }, // right
-    { x: 0, y: radius }, // bottom
-    { x: -radius, y: 0 }, // left
-    { x: 0, y: 0 }, // center
-  ];
+  // We'll distribute 5 cards evenly => each ~72° apart
+  // (We start at -90° for "top" orientation)
+  const angleIncrement = 360 / 5;
+  const startAngleDeg = -90; // top at -90
 
   return (
     <div
-      className="
-        relative mx-auto hidden md:block
-        w-[600px] h-[600px]
-      "
+      className="relative mx-auto hidden md:block"
+      style={{ width: ringSize, height: ringSize }}
     >
       {/* The dashed ring */}
       <div
@@ -229,22 +213,24 @@ function FlywheelRing({
         "
       />
 
-      {/* Place each step absolutely */}
       {steps.map((step, i) => {
-        const p = positions[i] || { x: 0, y: 0 }; // fallback if >5
+        // Compute angle in radians
+        const angleDeg = startAngleDeg + i * angleIncrement;
+        const angleRad = (Math.PI / 180) * angleDeg;
+
+        // x,y offsets from center
+        const x = Math.cos(angleRad) * radius;
+        const y = Math.sin(angleRad) * radius;
+
         return (
           <Card
             key={step.title}
-            className="
-              absolute p-6 bg-white/80 
-              backdrop-blur-md shadow-md hover:shadow-lg 
-              transition-shadow duration-200
-              w-[220px] 
-            "
+            variant="flywheel"
+            padding="sm"
+            className="absolute"
             style={{
-              // center the card at the ring center + offset
-              left: `${ringSize / 2 + p.x - 110}px`, // half card width ~110
-              top: `${ringSize / 2 + p.y - 60}px`, // half card height ~60
+              left: radius + x - 115, // half of 230px width
+              top: radius + y - 110, // half of 220px height
             }}
           >
             <StepCardContent step={step} index={i} />
