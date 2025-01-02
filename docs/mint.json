@@ -1,8 +1,8 @@
 {
   "name": "Neuromosaic",
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg",
+    "light": "/logo/logo.svg",
+    "dark": "/logo/logo.svg",
     "href": "/"
   },
   "favicon": "/favicon.png",
