@@ -9,7 +9,7 @@ This guide explains how to integrate new language model providers for neural arc
 
 ## Overview
 
-NeuroMosaic uses language models to:
+Neuromosaic uses language models to:
 
 1. Generate architecture descriptions
 2. Parse natural language constraints

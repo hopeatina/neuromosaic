@@ -1,11 +1,11 @@
 ---
 title: "Quickstart"
-description: "Get up and running with NeuroMosaic in minutes"
+description: "Get up and running with Neuromosaic in minutes"
 ---
 
 # Quickstart Guide
 
-Get NeuroMosaic running in three simple steps.
+Get Neuromosaic running in three simple steps.
 
 ## 1. Installation
 

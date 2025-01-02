@@ -6,6 +6,8 @@ description: "Learn how to analyze and interpret architecture search results"
 <Note>
   This guide helps you understand and extract insights from your architecture search experiments.
   Most advanced analysis features described here are planned for future releases.
+  
+  View the full documentation at [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
 </Note>
 
 ## Basic Analysis
@@ -214,9 +216,15 @@ python -m neuromosaic inspect <architecture-id> --export-code
   - Architecture inspection
   
   Coming Soon:
-  - [Advanced visualization](/guides/visualize-results)
-  - [Meta-learning insights](/research/meta-learning-insights)
-  - [Case studies](/research/experiment-case-studies)
+  - [Advanced visualization](https://neuromosaic.mintlify.app/guides/visualize-results)
+  - [Meta-learning insights](https://neuromosaic.mintlify.app/research/meta-learning-insights)
+  - [Case studies](https://neuromosaic.mintlify.app/research/experiment-case-studies)
   
   Note: Many analysis features are still under development.
 </Check>
+
+<Info>
+  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/neuromosaic/neuromosaic/issues).
+  
+  Full documentation: [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
+</Info>

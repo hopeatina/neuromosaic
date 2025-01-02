@@ -1,10 +1,10 @@
 ---
 title: "Experiment Case Studies"
-description: "Real-world examples of neural architecture exploration using NeuroMosaic"
+description: "Real-world examples of neural architecture exploration using Neuromosaic"
 ---
 
 <Note>
-  These case studies demonstrate how NeuroMosaic has been used to solve real-world architecture search problems.
+  These case studies demonstrate how Neuromosaic has been used to solve real-world architecture search problems.
 </Note>
 
 ## Featured Studies

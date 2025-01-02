@@ -4,8 +4,10 @@ description: "Learn how to configure and run architecture search experiments"
 ---
 
 <Note>
-  This guide explains how to configure and run architecture search experiments in NeuroMosaic.
+  This guide explains how to configure and run architecture search experiments in Neuromosaic.
   Some advanced features described here are planned for future releases.
+  
+  View the full documentation at [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
 </Note>
 
 ## Quick Start
@@ -194,9 +196,15 @@ Available Now:
   - Simple metrics tracking
   
   Coming Soon:
-  - [Advanced visualization](/guides/visualize-results)
-  - [Result interpretation](/guides/interpret-outcomes)
-  - [Meta-learning insights](/research/meta-learning-insights)
+  - [Advanced visualization](https://neuromosaic.mintlify.app/guides/visualize-results)
+  - [Result interpretation](https://neuromosaic.mintlify.app/guides/interpret-outcomes)
+  - [Meta-learning insights](https://neuromosaic.mintlify.app/research/meta-learning-insights)
   
   Note: Some features mentioned in the documentation are still under development.
 </Check>
+
+<Info>
+  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/neuromosaic/neuromosaic/issues).
+  
+  Full documentation: [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
+</Info>

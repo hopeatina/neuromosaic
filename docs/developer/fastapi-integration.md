@@ -5,7 +5,7 @@ description: "Learn how to work with and extend the FastAPI backend"
 
 # FastAPI Integration
 
-This guide explains how to work with NeuroMosaic's FastAPI backend, including adding new endpoints and integrating with the frontend.
+This guide explains how to work with Neuromosaic's FastAPI backend, including adding new endpoints and integrating with the frontend.
 
 ## API Structure
 
@@ -216,7 +216,7 @@ class ExperimentRepository:
 ```python
 from neuromosaic.client import ApiClient
 
-class NeuroMosaicClient:
+class NeuromosaicClient:
     def __init__(self, base_url: str):
         self.client = ApiClient(base_url)
 

@@ -1,16 +1,16 @@
 ---
 title: "The Sphere Metaphor"
-description: "Understanding NeuroMosaic's unique approach to neural architecture representation"
+description: "Understanding Neuromosaic's unique approach to neural architecture representation"
 ---
 
 <Note>
-  The sphere metaphor is a fundamental concept in NeuroMosaic that enables intuitive navigation of the neural architecture space.
+  The sphere metaphor is a fundamental concept in Neuromosaic that enables intuitive navigation of the neural architecture space.
 </Note>
 
 ## Core Concept
 
 <Info>
-  NeuroMosaic maps neural architectures onto a hypersphere, where:
+  Neuromosaic maps neural architectures onto a hypersphere, where:
   - Similar architectures are close together
   - Distance represents architectural differences
   - Surface coverage indicates exploration completeness

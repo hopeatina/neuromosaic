@@ -1,8 +1,8 @@
-# NeuroMosaic Architecture Documentation
+# Neuromosaic Architecture Documentation
 
 ## Overview
 
-NeuroMosaic is an automated neural architecture search and optimization framework that leverages LLMs for code generation. The system employs a modular architecture to enable:
+Neuromosaic is an automated neural architecture search and optimization framework that leverages LLMs for code generation. The system employs a modular architecture to enable:
 
 - Automated exploration of neural network architectures
 - LLM-powered code generation for implementing architectures

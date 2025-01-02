@@ -48,7 +48,7 @@ const steps = [
   {
     title: "Analyze & Iterate",
     description:
-      "NeuroMosaic aggregates experiment outputs, surfaces insights, and suggests next steps.",
+      "Neuromosaic aggregates experiment outputs, surfaces insights, and suggests next steps.",
   },
   {
     title: "Publish & Collaborate",

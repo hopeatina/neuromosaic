@@ -1,10 +1,10 @@
 ---
 title: "Adding New Architectures"
-description: "Learn how to extend NeuroMosaic with new neural architecture types"
+description: "Learn how to extend Neuromosaic with new neural architecture types"
 ---
 
 <Note>
-  This guide is for developers who want to extend NeuroMosaic's capabilities by adding support for new neural architecture types. Make sure you're familiar with the [platform overview](/platform/overview) before proceeding.
+  This guide is for developers who want to extend Neuromosaic's capabilities by adding support for new neural architecture types. Make sure you're familiar with the [platform overview](/platform/overview) before proceeding.
 </Note>
 
 ## Implementation Checklist
@@ -14,7 +14,7 @@ description: "Learn how to extend NeuroMosaic with new neural architecture types
   2. Implement the **Encoder/Decoder** for continuous space representation
   3. Build a **Performance Evaluator** for your architecture
   4. Define the **Search Space** parameters
-  5. **Register** your components with NeuroMosaic
+  5. **Register** your components with Neuromosaic
 </Steps>
 
 ## Architecture Specification

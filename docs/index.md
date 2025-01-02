@@ -1,11 +1,11 @@
 ---
-title: "NeuroMosaic Documentation"
+title: "Neuromosaic Documentation"
 description: "Explore the architecture search space for neural networks through interactive visualization and meta-learning"
 ---
 
-# Welcome to NeuroMosaic
+# Welcome to Neuromosaic
 
-NeuroMosaic is an innovative platform for exploring and optimizing neural network architectures through interactive visualization and meta-learning. By representing architectures as points in a continuous space, we enable intuitive exploration and efficient optimization of neural network designs.
+Neuromosaic is an innovative platform for exploring and optimizing neural network architectures through interactive visualization and meta-learning. By representing architectures as points in a continuous space, we enable intuitive exploration and efficient optimization of neural network designs.
 
 ## Core Features
 
@@ -18,7 +18,7 @@ NeuroMosaic is an innovative platform for exploring and optimizing neural networ
 
 <CardGroup cols={2}>
   <Card title="Getting Started" icon="play" href="/guides/getting-started">
-    Set up NeuroMosaic and run your first experiment
+    Set up Neuromosaic and run your first experiment
   </Card>
   <Card title="Architecture Space" icon="cube" href="/research/sphere-metaphor">
     Understand how we represent neural architectures
@@ -27,13 +27,13 @@ NeuroMosaic is an innovative platform for exploring and optimizing neural networ
     Learn to use the interactive dashboard
   </Card>
   <Card title="Developer Guide" icon="code" href="/developer/adding-architectures">
-    Extend NeuroMosaic's capabilities
+    Extend Neuromosaic's capabilities
   </Card>
 </CardGroup>
 
 ## The Architecture Space
 
-At the heart of NeuroMosaic is the concept of representing neural architectures as points in a continuous space. Imagine a 3D sphere where:
+At the heart of Neuromosaic is the concept of representing neural architectures as points in a continuous space. Imagine a 3D sphere where:
 
 - Each point represents a unique architecture configuration
 - Similar architectures cluster together

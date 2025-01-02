@@ -1,11 +1,13 @@
 ---
 title: "Getting Started"
-description: "Set up NeuroMosaic and run your first architecture exploration"
+description: "Set up Neuromosaic and run your first architecture exploration"
 ---
 
 <Note>
-  Welcome to NeuroMosaic! This guide will help you set up the platform and run your first neural architecture exploration experiment.
+  Welcome to Neuromosaic! This guide will help you set up the platform and run your first neural architecture exploration experiment.
   Some features described here are planned for future releases.
+  
+  View the full documentation at [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
 </Note>
 
 ## Quick Setup
@@ -190,16 +192,18 @@ description: "Set up NeuroMosaic and run your first architecture exploration"
   Ready to explore more?
   
   Available Now:
-  - [Run custom experiments](/guides/run-experiments)
+  - [Run custom experiments](https://neuromosaic.mintlify.app/guides/run-experiments)
   - Basic result analysis
   
   Coming Soon:
-  - [Interactive visualization](/guides/visualize-results)
-  - [Advanced analysis](/guides/interpret-outcomes)
+  - [Interactive visualization](https://neuromosaic.mintlify.app/guides/visualize-results)
+  - [Advanced analysis](https://neuromosaic.mintlify.app/guides/interpret-outcomes)
   
   Note: Some features mentioned in the documentation are still under development.
 </Check>
 
 <Info>
   Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/neuromosaic/neuromosaic/issues).
+  
+  Full documentation: [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
 </Info>

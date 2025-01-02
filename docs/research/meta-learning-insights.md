@@ -1,10 +1,10 @@
 ---
 title: "Meta-Learning Insights"
-description: "Understanding how NeuroMosaic learns to learn better neural architectures"
+description: "Understanding how Neuromosaic learns to learn better neural architectures"
 ---
 
 <Note>
-  Meta-learning in NeuroMosaic goes beyond traditional architecture search by learning patterns and strategies that improve the search process itself.
+  Meta-learning in Neuromosaic goes beyond traditional architecture search by learning patterns and strategies that improve the search process itself.
 </Note>
 
 ## Core Principles
