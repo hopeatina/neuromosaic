@@ -1,45 +1,75 @@
 {
   "name": "NeuroMosaic",
   "logo": {
-    "light": "/logo/light.png",
-    "dark": "/logo/dark.png"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "/"
   },
   "favicon": "/favicon.png",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373"
+    "primary": "#2e2066",
+    "light": "#4a3990",
+    "dark": "#0c0c1c",
+    "background": {
+      "light": "#f4f4f4",
+      "dark": "#0c0c1c"
+    }
+  },
+  "theme": "prism",
+  "modeToggle": {
+    "default": "dark"
   },
   "topbarLinks": [
     {
       "name": "GitHub",
-      "url": "https://github.com/yourusername/neuromosaic"
+      "url": "https://github.com/neuromosaic/neuromosaic"
     }
   ],
   "topbarCtaButton": {
     "name": "Get Started",
-    "url": "guides/getting-started"
+    "url": "/docs/quickstart"
   },
-  "navigation": [
+  "anchors": [
     {
-      "group": "Introduction",
-      "pages": ["index", "quickstart"]
+      "name": "Platform",
+      "icon": "brain",
+      "color": "#bf3abb",
+      "url": "platform"
     },
     {
-      "group": "User Guides",
+      "name": "API Reference",
+      "icon": "code",
+      "color": "#7c71d8",
+      "url": "api"
+    },
+    {
+      "name": "Research",
+      "icon": "flask",
+      "color": "#2e2066",
+      "url": "research"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["quickstart", "introduction"]
+    },
+    {
+      "group": "Platform Architecture",
       "pages": [
-        "guides/getting-started",
-        "guides/run-experiments",
-        "guides/visualize-results",
-        "guides/interpret-outcomes"
+        "platform/overview",
+        "platform/distributed-computing",
+        "platform/data-pipeline",
+        "platform/security"
       ]
     },
     {
-      "group": "Developer Documentation",
+      "group": "API Reference",
       "pages": [
-        "developer/adding-architectures",
-        "developer/llm-providers",
-        "developer/fastapi-integration"
+        "api/overview",
+        "api/authentication",
+        "api/endpoints",
+        "api/error-handling"
       ]
     },
     {
@@ -49,9 +79,35 @@
         "research/meta-learning-insights",
         "research/experiment-case-studies"
       ]
+    },
+    {
+      "group": "Developer Guide",
+      "pages": [
+        "developer/adding-architectures",
+        "developer/llm-providers",
+        "developer/fastapi-integration"
+      ]
     }
   ],
   "footerSocials": {
-    "github": "https://github.com/yourusername/neuromosaic"
+    "github": "https://github.com/neuromosaic/neuromosaic",
+    "discord": "https://discord.gg/neuromosaic"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "search": {
+    "prompt": "Search NeuroMosaic docs..."
+  },
+  "api": {
+    "baseUrl": "https://api.neuromosaic.org",
+    "auth": {
+      "method": "bearer"
+    },
+    "playground": {
+      "mode": "show"
+    }
   }
 }

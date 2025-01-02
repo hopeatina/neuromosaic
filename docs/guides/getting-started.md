@@ -3,97 +3,146 @@ title: "Getting Started"
 description: "Set up NeuroMosaic and run your first architecture exploration"
 ---
 
-# Getting Started with NeuroMosaic
+<Note>
+  Welcome to NeuroMosaic! This guide will help you set up the platform and run your first neural architecture exploration experiment.
+</Note>
 
-This guide will walk you through setting up NeuroMosaic and running your first architecture exploration experiment.
+## Quick Setup
 
-## Installation
+<Steps>
+  1. **Clone the Repository**
+     ```bash
+     git clone https://github.com/neuromosaic/neuromosaic.git
+     cd neuromosaic
+     ```
 
-1. Clone the repository:
+2. **Create Environment**
+   <CodeGroup>
 
-```bash
-git clone https://github.com/yourusername/neuromosaic.git
-cd neuromosaic
-```
+   ```bash macOS/Linux
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
-2. Create a virtual environment and install dependencies:
+   ```bash Windows
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-pip install -r requirements.txt
-```
+   </CodeGroup>
 
-## Launch the Dashboard
-
-1. Start the FastAPI backend:
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-2. In a new terminal, launch the frontend:
-
-```bash
-cd frontend
-streamlit run app.py
-```
-
-The dashboard should now be accessible at `http://localhost:8501`.
+3. **Launch Services**
+   <Tabs>
+   <Tab title="Backend">
+   `bash
+      uvicorn backend.main:app --reload
+      `
+   </Tab>
+   <Tab title="Frontend">
+   `bash
+      cd frontend
+      streamlit run app.py
+      `
+   </Tab>
+   </Tabs>
+   </Steps>
 
 ## Your First Experiment
 
-1. **Configure Search Space**
+<CardGroup cols={2}>
+  <Card title="Configure Search" icon="sliders">
+    Navigate to the "Configuration" tab and set up your exploration parameters:
+    - Select architecture type
+    - Define parameter ranges
+    - Set optimization goals
+  </Card>
+  
+  <Card title="Launch Search" icon="play">
+    Start your architecture exploration:
+    - Click "Start Exploration"
+    - Monitor real-time progress
+    - View emerging patterns
+  </Card>
+  
+  <Card title="Analyze Results" icon="chart-line">
+    Interpret your findings:
+    - Use 3D visualization
+    - Compare architectures
+    - Export discoveries
+  </Card>
+  
+  <Card title="Iterate & Refine" icon="rotate">
+    Improve your results:
+    - Adjust parameters
+    - Focus on promising regions
+    - Test hypotheses
+  </Card>
+</CardGroup>
 
-   - Navigate to the "Configuration" tab
-   - Select your target architecture type
-   - Define parameter ranges for exploration
+## Understanding the Interface
 
-2. **Launch Exploration**
+<Accordion title="3D Visualization">
+  The main scatter plot shows:
+  - Each point represents an architecture
+  - Colors indicate performance metrics
+  - Clusters show similar designs
+  - Hover for detailed information
+</Accordion>
 
-   - Click "Start Exploration" to begin the search
-   - Watch as points appear in the 3D visualization
-   - Monitor metrics in real-time
+<Accordion title="Timeline View">
+  The timeline displays:
+  - Search progression
+  - Performance trends
+  - Discovery milestones
+  - Convergence patterns
+</Accordion>
 
-3. **Analyze Results**
-   - Use the 3D scatter plot to identify promising regions
-   - Check the timeline plot for convergence
-   - Export results for further analysis
+<Accordion title="Control Panel">
+  Key controls include:
+  - Parameter adjustments
+  - Visualization options
+  - Export tools
+  - Search controls
+</Accordion>
 
-## Understanding the Visualization
+## Common Issues
 
-The main 3D scatter plot shows:
+<Warning>
+  Make sure both backend (port 8000) and frontend (port 8501) servers are running and accessible.
+</Warning>
 
-- Each point = One architecture configuration
-- Color = Performance metric
-- Clustering = Similar architectures
-- Hover for detailed information
+<Tabs>
+  <Tab title="Dashboard Issues">
+    <Steps>
+      1. Check if both servers are running
+      2. Verify port availability
+      3. Check browser console
+      4. Clear browser cache
+    </Steps>
+  </Tab>
+  
+  <Tab title="Search Problems">
+    <Steps>
+      1. Verify search space configuration
+      2. Check resource availability
+      3. Monitor system logs
+      4. Review error messages
+    </Steps>
+  </Tab>
+</Tabs>
 
 ## Next Steps
 
-- Learn about [architecture representation](/research/sphere-metaphor)
-- Explore [visualization features](/guides/visualize-results)
-- Understand how to [interpret results](/guides/interpret-outcomes)
-- Set up [custom experiments](/guides/run-experiments)
+<Check>
+  Ready to dive deeper? Explore these resources:
+  - [Architecture Representation](/research/sphere-metaphor)
+  - [Visualization Features](/guides/visualize-results)
+  - [Result Interpretation](/guides/interpret-outcomes)
+  - [Custom Experiments](/guides/run-experiments)
+</Check>
 
-## Troubleshooting
-
-Common issues and solutions:
-
-<Accordion title="Dashboard not loading">
-  - Check if both backend and frontend servers are running
-  - Verify ports 8000 (API) and 8501 (Dashboard) are available
-  - Check console for error messages
-</Accordion>
-
-<Accordion title="Visualization not updating">
-  - Ensure WebSocket connection is active
-  - Try refreshing the browser
-  - Check backend logs for errors
-</Accordion>
-
-## Need Help?
-
-- Check our [GitHub Issues](https://github.com/yourusername/neuromosaic/issues)
-- Review the [Developer Guide](/developer/adding-architectures)
-- Join our community discussions
+<Info>
+  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/neuromosaic/neuromosaic/issues).
+</Info>

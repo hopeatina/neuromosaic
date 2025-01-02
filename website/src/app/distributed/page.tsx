@@ -3,12 +3,19 @@ import { Container } from "@/components/ui/Container";
 import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { FloatingPetal } from "@/components/ui/FloatingPetal";
 
 const features = [
   {
     title: "Resource Management",
     description:
-      "Intelligent allocation and management of computing resources across the distributed network.",
+      "Intelligent allocation and optimization of computing resources across the distributed network.",
+    details: [
+      "Dynamic resource scaling",
+      "Load balancing",
+      "Performance monitoring",
+      "Cost optimization",
+    ],
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -29,7 +36,13 @@ const features = [
   {
     title: "Task Distribution",
     description:
-      "Efficient distribution of training tasks and workloads across available computing nodes.",
+      "Advanced workload distribution system that ensures optimal training performance across nodes.",
+    details: [
+      "Smart task allocation",
+      "Priority scheduling",
+      "Failure recovery",
+      "Progress tracking",
+    ],
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -50,7 +63,13 @@ const features = [
   {
     title: "Progress Tracking",
     description:
-      "Real-time monitoring and visualization of training progress across the distributed network.",
+      "Real-time monitoring and visualization of training progress with detailed analytics.",
+    details: [
+      "Performance metrics",
+      "Resource utilization",
+      "Training insights",
+      "Error analysis",
+    ],
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -72,25 +91,58 @@ const features = [
 
 export default function DistributedPage() {
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden">
+      {/* Background petals */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <FloatingPetal
+          size="xl"
+          className="absolute -top-44 -right-32"
+          gradientId="petal-1"
+        />
+        <FloatingPetal
+          size="lg"
+          className="absolute top-96 -left-16"
+          gradientId="petal-2"
+          delay={1}
+        />
+        <FloatingPetal
+          size="md"
+          className="absolute bottom-32 right-16"
+          gradientId="petal-3"
+          delay={2}
+        />
+      </div>
+
       {/* Hero section */}
-      <div className="relative py-16 sm:py-24">
+      <div className="relative py-16 sm:py-24 bg-gradient-hero from-background-dark via-background-dark/95 to-background-dark/90">
         <Container>
           <div className="mx-auto max-w-2xl text-center">
-            <Text as="h1" variant="display" className="mb-6">
+            <Text as="h1" variant="display" className="mb-6 text-white">
               Distributed Platform
             </Text>
-            <Text variant="body-lg" textColor="muted" className="mb-8">
-              Access powerful distributed computing resources for AI model
-              training and experimentation. Join our network of contributors to
-              accelerate development.
+            <Text variant="body-lg" className="mb-8 text-neutral-200">
+              Harness the power of distributed computing for AI model training
+              and experimentation. Our platform enables efficient resource
+              utilization and seamless collaboration across nodes.
             </Text>
             <div className="flex flex-wrap justify-center gap-4">
               <Link href="/get-involved#join-waitlist" className="inline-block">
-                <Button size="lg">Request Access</Button>
+                <Button
+                  size="lg"
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  Request Access
+                </Button>
               </Link>
-              <Link href="/docs" className="inline-block">
-                <Button variant="secondary" size="lg">
+              <Link
+                href="https://neuromosaic.mintlify.app/"
+                className="inline-block"
+              >
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="bg-white/10 hover:bg-white/20 text-white border-none"
+                >
                   View Documentation
                 </Button>
               </Link>
@@ -101,55 +153,86 @@ export default function DistributedPage() {
 
       {/* Features */}
       <Container className="py-16">
+        <Text as="h2" variant="h1" className="mb-6 text-center">
+          Platform Features
+        </Text>
+        <Text
+          variant="body-lg"
+          textColor="muted"
+          className="mb-12 text-center max-w-2xl mx-auto"
+        >
+          Our distributed platform is built for performance, scalability, and
+          ease of use.
+        </Text>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {features.map((feature) => (
-            <Card key={feature.title} className="p-6">
+            <Card
+              key={feature.title}
+              className="p-8 bg-white hover:shadow-lg transition-shadow duration-200"
+            >
               <div className="mb-4 text-primary">{feature.icon}</div>
               <Text as="h3" variant="h3" className="mb-3">
                 {feature.title}
               </Text>
-              <Text textColor="muted">{feature.description}</Text>
+              <Text textColor="muted" className="mb-6 text-neutral-700">
+                {feature.description}
+              </Text>
+              <ul className="space-y-2">
+                {feature.details.map((detail) => (
+                  <li key={detail} className="flex items-start gap-2">
+                    <span className="block w-1.5 h-1.5 mt-2 rounded-full bg-secondary shrink-0" />
+                    <Text variant="small" className="text-neutral-600">
+                      {detail}
+                    </Text>
+                  </li>
+                ))}
+              </ul>
             </Card>
           ))}
         </div>
       </Container>
 
       {/* How it works */}
-      <div className="bg-neutral-50 border-y border-neutral-200">
+      <div className="bg-gradient-dark border-y border-white/10">
         <Container className="py-16">
           <div className="mx-auto max-w-3xl">
-            <Text as="h2" variant="h1" className="mb-12 text-center">
+            <Text as="h2" variant="h1" className="mb-12 text-center text-white">
               How It Works
             </Text>
             <div className="space-y-12">
-              <div>
-                <Text as="h3" variant="h2" className="mb-4">
+              <div className="relative pl-8 pb-12 border-l-2 border-primary/20 last:border-0">
+                <div className="absolute left-0 -translate-x-1/2 w-4 h-4 rounded-full bg-primary" />
+                <Text as="h3" variant="h2" className="mb-4 text-white">
                   1. Join the Network
                 </Text>
-                <Text textColor="muted">
-                  Sign up and connect your computing resources to our
-                  distributed network. Our platform automatically manages
-                  resource allocation and task distribution.
+                <Text className="text-neutral-300">
+                  Connect your computing resources to our distributed network.
+                  Our platform automatically handles resource allocation and
+                  task distribution, ensuring optimal utilization of your
+                  hardware.
                 </Text>
               </div>
-              <div>
-                <Text as="h3" variant="h2" className="mb-4">
+              <div className="relative pl-8 pb-12 border-l-2 border-primary/20 last:border-0">
+                <div className="absolute left-0 -translate-x-1/2 w-4 h-4 rounded-full bg-primary" />
+                <Text as="h3" variant="h2" className="mb-4 text-white">
                   2. Configure Resources
                 </Text>
-                <Text textColor="muted">
-                  Specify the amount of computing power you want to contribute
-                  and set your availability preferences. Our system ensures
-                  optimal resource utilization.
+                <Text className="text-neutral-300">
+                  Set your resource availability preferences and constraints.
+                  Our intelligent system ensures your hardware is utilized
+                  according to your specifications while maintaining optimal
+                  network performance.
                 </Text>
               </div>
-              <div>
-                <Text as="h3" variant="h2" className="mb-4">
+              <div className="relative pl-8">
+                <div className="absolute left-0 -translate-x-1/2 w-4 h-4 rounded-full bg-primary" />
+                <Text as="h3" variant="h2" className="mb-4 text-white">
                   3. Start Contributing
                 </Text>
-                <Text textColor="muted">
+                <Text className="text-neutral-300">
                   Begin participating in distributed training tasks. Monitor
-                  your contribution metrics and earn rewards for your
-                  participation in the network.
+                  your contribution metrics in real-time and earn rewards based
+                  on your participation and resource provision.
                 </Text>
               </div>
             </div>
@@ -159,17 +242,22 @@ export default function DistributedPage() {
 
       {/* CTA section */}
       <Container className="py-16">
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center bg-gradient-primary text-white">
           <Text as="h2" variant="h2" className="mb-4">
             Ready to Join?
           </Text>
-          <Text textColor="muted" className="mb-8 max-w-2xl mx-auto">
+          <Text className="mb-8 max-w-2xl mx-auto text-white/90">
             Be part of our distributed computing network and help accelerate AI
-            development. Early contributors get priority access and additional
-            benefits.
+            development. Early contributors receive priority access and
+            additional benefits.
           </Text>
           <Link href="/get-involved#join-waitlist">
-            <Button size="lg">Request Early Access</Button>
+            <Button
+              size="lg"
+              className="bg-white text-primary hover:bg-white/90"
+            >
+              Request Early Access
+            </Button>
           </Link>
         </Card>
       </Container>

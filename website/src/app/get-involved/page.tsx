@@ -1,14 +1,17 @@
 import Link from "next/link";
+import { useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { WaitlistForm } from "@/components/forms/WaitlistForm";
 
 const contributionAreas = [
   {
     title: "Model Development",
     description:
-      "Contribute to model architecture improvements, training optimizations, and new capability development.",
+      "Contribute to core model architecture, training optimizations, and capability enhancements. Help shape the future of distributed AI training.",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -25,11 +28,17 @@ const contributionAreas = [
         />
       </svg>
     ),
+    benefits: [
+      "Access to cutting-edge AI research",
+      "Collaboration with expert researchers",
+      "Recognition for contributions",
+      "Early access to new features",
+    ],
   },
   {
     title: "Infrastructure",
     description:
-      "Help build and maintain the distributed computing infrastructure that powers our platform.",
+      "Help build and optimize our distributed computing infrastructure. Work on scalability, reliability, and performance improvements.",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -46,11 +55,17 @@ const contributionAreas = [
         />
       </svg>
     ),
+    benefits: [
+      "Work with modern cloud technologies",
+      "Solve complex scaling challenges",
+      "Impact platform performance",
+      "Technical mentorship",
+    ],
   },
   {
     title: "Documentation",
     description:
-      "Write and improve documentation to help others understand and use the platform effectively.",
+      "Create and improve technical documentation, tutorials, and guides. Help make our platform more accessible to developers worldwide.",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -67,32 +82,48 @@ const contributionAreas = [
         />
       </svg>
     ),
+    benefits: [
+      "Improve technical writing skills",
+      "Shape developer experience",
+      "Community recognition",
+      "Documentation expertise",
+    ],
   },
 ];
 
 export default function GetInvolvedPage() {
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+
   return (
     <div className="relative">
       {/* Hero section */}
-      <div className="relative py-16 sm:py-24">
+      <div className="relative py-16 sm:py-24 bg-gradient-hero from-background-dark via-background-dark/95 to-background-dark/90 text-white">
         <Container>
           <div className="mx-auto max-w-2xl text-center">
             <Text as="h1" variant="display" className="mb-6">
               Get Involved
             </Text>
-            <Text variant="body-lg" textColor="muted" className="mb-8">
-              Join our community of researchers, developers, and AI enthusiasts
-              working together to advance the field of machine learning.
+            <Text variant="body-lg" className="mb-8 text-neutral-200">
+              Join our community of researchers, developers, and AI enthusiasts.
+              Together, we're building the future of distributed AI development.
             </Text>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="#join-waitlist" className="inline-block">
-                <Button size="lg">Join Waitlist</Button>
-              </Link>
+              <Button
+                size="lg"
+                className="bg-gradient-primary hover:opacity-90"
+                onClick={() => setIsWaitlistOpen(true)}
+              >
+                Join Waitlist
+              </Button>
               <Link
-                href="https://github.com/neuromosaic"
+                href="https://github.com/hopeatina/neuromosaic"
                 className="inline-block"
               >
-                <Button variant="secondary" size="lg">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="bg-white/10 hover:bg-white/20 text-white border-none"
+                >
                   View on GitHub
                 </Button>
               </Link>
@@ -103,81 +134,60 @@ export default function GetInvolvedPage() {
 
       {/* Contribution areas */}
       <Container className="py-16">
-        <Text as="h2" variant="h1" className="mb-12 text-center">
+        <Text as="h2" variant="h1" className="mb-6 text-center">
           Ways to Contribute
+        </Text>
+        <Text
+          variant="body-lg"
+          textColor="muted"
+          className="mb-12 text-center max-w-2xl mx-auto"
+        >
+          Choose your path and start contributing to areas that match your
+          interests and expertise.
         </Text>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {contributionAreas.map((area) => (
-            <Card key={area.title} className="p-6">
+            <Card
+              key={area.title}
+              className="p-8 flex flex-col h-full bg-white hover:shadow-lg transition-shadow duration-200"
+            >
               <div className="mb-4 text-primary">{area.icon}</div>
               <Text as="h3" variant="h3" className="mb-3">
                 {area.title}
               </Text>
-              <Text textColor="muted">{area.description}</Text>
+              <Text textColor="muted" className="mb-6">
+                {area.description}
+              </Text>
+              <div className="mt-auto">
+                <Text
+                  variant="small"
+                  className="font-semibold text-primary mb-3"
+                >
+                  Benefits
+                </Text>
+                <ul className="space-y-2">
+                  {area.benefits.map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-2">
+                      <span className="block w-1.5 h-1.5 mt-2 rounded-full bg-secondary shrink-0" />
+                      <Text variant="small" textColor="muted">
+                        {benefit}
+                      </Text>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </Card>
           ))}
         </div>
       </Container>
 
-      {/* Waitlist section */}
-      <div className="bg-neutral-50 border-y border-neutral-200">
-        <Container className="py-16">
-          <div className="mx-auto max-w-2xl">
-            <Card className="p-8" id="join-waitlist">
-              <Text as="h2" variant="h2" className="mb-6">
-                Join the Waitlist
-              </Text>
-              <Text textColor="muted" className="mb-8">
-                Sign up to be among the first to access our platform when we
-                launch. Early contributors will have the opportunity to shape
-                the future of distributed AI development.
-              </Text>
-              <form className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-neutral-700 mb-1"
-                  >
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    className="form-input"
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="interests"
-                    className="block text-sm font-medium text-neutral-700 mb-1"
-                  >
-                    Areas of interest
-                  </label>
-                  <select
-                    id="interests"
-                    name="interests"
-                    className="form-input"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Select an area
-                    </option>
-                    <option value="model-development">Model Development</option>
-                    <option value="infrastructure">Infrastructure</option>
-                    <option value="documentation">Documentation</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <Button type="submit" size="lg" className="w-full">
-                  Join Waitlist
-                </Button>
-              </form>
-            </Card>
-          </div>
-        </Container>
-      </div>
+      <Modal
+        isOpen={isWaitlistOpen}
+        onOpenChange={setIsWaitlistOpen}
+        size="wide"
+      >
+        <WaitlistForm onSuccess={() => setIsWaitlistOpen(false)} />
+      </Modal>
     </div>
   );
 }

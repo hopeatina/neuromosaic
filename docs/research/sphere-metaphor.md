@@ -1,136 +1,204 @@
 ---
 title: "The Sphere Metaphor"
-description: "Understanding how neural architectures are represented in a continuous 3D space"
+description: "Understanding NeuroMosaic's unique approach to neural architecture representation"
 ---
 
-# The Sphere Metaphor
+<Note>
+  The sphere metaphor is a fundamental concept in NeuroMosaic that enables intuitive navigation of the neural architecture space.
+</Note>
 
-## Conceptual Overview
+## Core Concept
 
-Imagine the space of all possible neural network architectures as points on a sphere. This geometric interpretation provides an intuitive way to understand and explore the vast landscape of architectural possibilities.
-
-## Key Concepts
-
-### Embedding Space
-
-The 3D visualization you see in NeuroMosaic is actually a lower-dimensional projection of a much higher-dimensional space. We use advanced dimensionality reduction techniques to create this representation while preserving important relationships between architectures.
-
-```mermaid
-graph LR
-    A[High-dimensional Architecture] --> B[Embedding Model]
-    B --> C[3D Point]
-    C --> D[Interactive Visualization]
-```
-
-### Distance and Similarity
-
-- **Proximity** = Architectural Similarity
-- **Clusters** = Families of Related Architectures
-- **Paths** = Smooth Transitions Between Designs
+<Info>
+  NeuroMosaic maps neural architectures onto a hypersphere, where:
+  - Similar architectures are close together
+  - Distance represents architectural differences
+  - Surface coverage indicates exploration completeness
+</Info>
 
 ## Mathematical Foundation
 
-The embedding process involves:
-
-1. **Architecture Encoding**
-
-   - Convert discrete architecture specifications into continuous vectors
-   - Preserve topological relationships and design patterns
-
-2. **Dimensionality Reduction**
-
-   - Project high-dimensional embeddings to 3D space
-   - Maintain relative distances and neighborhood relationships
-
-3. **Metric Learning**
-   - Adapt the embedding space based on performance data
-   - Guide the search towards promising regions
-
-## Visualization Components
-
-Our interactive 3D scatter plot provides several layers of information:
+<Accordion title="Spherical Embedding">
+  The embedding process involves:
+  1. Dimension reduction through architectural encoding
+  2. Normalization to unit sphere
+  3. Preservation of architectural topology
+  4. Distance metric optimization
+</Accordion>
 
 <CodeGroup>
-```python Point Colors
-# Color mapping based on performance metrics
-color = metrics.normalize(architecture_performance)
-point.set_color(colormap(color))
-```
+```python Embedding Example
+from neuromosaic.embedding import SphereEmbedding
 
-```python Clustering
-# Distance-based clustering
-clusters = cluster_architectures(embeddings, method='dbscan')
-visualize_clusters(clusters)
-```
+# Create embedding
+
+embedding = SphereEmbedding(dimension=128)
+
+# Embed architecture
+
+vector = embedding.encode(architecture)
+normalized = embedding.project_to_sphere(vector)
+
+````
+
+```python Distance Computation
+# Compute geodesic distance
+distance = embedding.geodesic_distance(arch1, arch2)
+
+# Find nearest neighbors
+neighbors = embedding.find_nearest(
+    query_arch,
+    k=5,
+    metric="geodesic"
+)
+````
 
 </CodeGroup>
 
-## Navigation and Search
+## Visualization
 
-The sphere metaphor enables several powerful capabilities:
+<CardGroup cols={2}>
+  <Card title="3D Projection" icon="cube">
+    Interactive visualization showing:
+    - Architecture positions
+    - Performance gradients
+    - Exploration paths
+    - Cluster formations
+  </Card>
+  
+  <Card title="Distance Maps" icon="map">
+    Heatmaps revealing:
+    - Architecture similarities
+    - Performance landscapes
+    - Search trajectories
+    - Coverage analysis
+  </Card>
+</CardGroup>
 
-1. **Neighborhood Exploration**
+## Properties
 
-   - Sample architectures near high-performing points
-   - Smooth interpolation between successful designs
+<Tabs>
+  <Tab title="Continuity">
+    <Steps>
+      1. **Smooth Transitions**
+         - Gradual architecture changes
+         - Continuous performance landscape
+         - Interpolatable designs
+      
+      2. **Neighborhood Structure**
+         - Local similarity preservation
+         - Meaningful transitions
+         - Gradient-based navigation
+    </Steps>
+  </Tab>
+  
+  <Tab title="Coverage">
+    <Steps>
+      1. **Space Exploration**
+         - Uniform sampling strategies
+         - Coverage metrics
+         - Exploration efficiency
+      
+      2. **Density Analysis**
+         - Population distribution
+         - Underexplored regions
+         - Search prioritization
+    </Steps>
+  </Tab>
+</Tabs>
 
-2. **Gradient-Based Search**
+## Applications
 
-   - Follow performance gradients in the embedding space
-   - Efficient optimization in continuous space
+<CardGroup cols={2}>
+  <Card title="Architecture Search" icon="magnifying-glass">
+    - Efficient space exploration
+    - Gradient-based optimization
+    - Multi-objective search
+  </Card>
+  
+  <Card title="Performance Prediction" icon="chart-line">
+    - Neighborhood-based inference
+    - Uncertainty estimation
+    - Extrapolation capabilities
+  </Card>
+  
+  <Card title="Knowledge Transfer" icon="arrows-rotate">
+    - Cross-domain adaptation
+    - Transfer learning
+    - Architecture morphing
+  </Card>
+  
+  <Card title="Diversity Analysis" icon="layer-group">
+    - Population diversity
+    - Novelty detection
+    - Ensemble creation
+  </Card>
+</CardGroup>
 
-3. **Meta-Learning**
-   - Learn from previous experiments
-   - Adapt the embedding space to improve search efficiency
+## Implementation Details
 
-## Practical Applications
-
-### Finding Similar Architectures
-
+<Accordion title="Embedding Algorithm">
 ```python
-def find_similar_architectures(reference_point, radius=0.1):
-    """Find architectures within a radius of a reference point"""
-    neighbors = spatial_query(
-        point=reference_point,
-        radius=radius,
-        metric='euclidean'
-    )
-    return neighbors
+def create_sphere_embedding(architecture):
+    # 1. Extract features
+    features = extract_architectural_features(architecture)
+    
+    # 2. Reduce dimensionality
+    reduced = reduce_dimensions(features, target_dim=128)
+    
+    # 3. Project to sphere
+    normalized = project_to_sphere(reduced)
+    
+    return normalized
 ```
+</Accordion>
 
-### Interpolating Between Designs
-
+<Accordion title="Distance Metrics">
 ```python
-def interpolate_architectures(start_point, end_point, steps=10):
-    """Generate intermediate architectures between two points"""
-    path = linear_interpolation(
-        start=start_point,
-        end=end_point,
-        num_steps=steps
+def compute_distances(arch1, arch2):
+    # Euclidean distance in embedding space
+    euclidean = np.linalg.norm(
+        arch1.embedding - arch2.embedding
     )
-    return path
+    
+    # Geodesic distance on sphere
+    geodesic = compute_geodesic_distance(
+        arch1.embedding,
+        arch2.embedding
+    )
+    
+    return euclidean, geodesic
 ```
+</Accordion>
 
 ## Research Insights
 
-The sphere metaphor has revealed several interesting properties:
+<Warning>
+  The effectiveness of the sphere metaphor depends heavily on the quality of the architectural encoding and the chosen distance metrics.
+</Warning>
 
-1. **Topology Preservation**
+<Steps>
+  1. **Topology Preservation**
+     - Validate neighborhood relationships
+     - Measure distortion metrics
+     - Analyze clustering quality
+  
+  2. **Search Efficiency**
+     - Compare with baseline methods
+     - Measure convergence rates
+     - Evaluate exploration coverage
+  
+  3. **Scalability Analysis**
+     - Test with large architectures
+     - Benchmark computational costs
+     - Assess memory requirements
+</Steps>
 
-   - Similar architectures naturally cluster together
-   - Performance landscapes show meaningful structure
+## Next Steps
 
-2. **Search Efficiency**
-
-   - Continuous optimization is more efficient than discrete search
-   - Meta-learning can adapt the space for better search
-
-3. **Interpretability**
-   - Visual patterns often correspond to architectural patterns
-   - Helps in understanding architecture families and evolution
-
-## Further Reading
-
-- [Visualizing Results](/guides/visualize-results)
-- [Meta-Learning Insights](/research/meta-learning-insights)
-- [Running Experiments](/guides/run-experiments)
+<Check>
+  To dive deeper into the sphere metaphor:
+  - Study [meta-learning insights](/research/meta-learning-insights)
+  - Review [case studies](/research/experiment-case-studies)
+  - Explore [visualization tools](/guides/visualize-results)
+</Check>

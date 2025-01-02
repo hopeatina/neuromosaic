@@ -1,277 +1,273 @@
 ---
 title: "Experiment Case Studies"
-description: "Real-world examples of architecture search experiments and their insights"
+description: "Real-world examples of neural architecture exploration using NeuroMosaic"
 ---
 
-# Experiment Case Studies
+<Note>
+  These case studies demonstrate how NeuroMosaic has been used to solve real-world architecture search problems.
+</Note>
 
-This document presents real-world case studies of architecture search experiments conducted with NeuroMosaic.
+## Featured Studies
 
-## Case Study 1: Vision Transformer Search
+<CardGroup cols={2}>
+  <Card title="Vision Transformer" icon="eye">
+    Optimizing ViT architectures:
+    - Attention mechanism tuning
+    - Patch size optimization
+    - Layer configuration search
+  </Card>
+  
+  <Card title="Language Models" icon="comments">
+    Scaling transformer models:
+    - Parameter efficiency
+    - Memory optimization
+    - Throughput maximization
+  </Card>
+  
+  <Card title="Graph Neural Networks" icon="diagram-project">
+    GNN architecture exploration:
+    - Message passing design
+    - Aggregation strategies
+    - Layer connectivity
+  </Card>
+  
+  <Card title="Multi-Modal Fusion" icon="layer-group">
+    Cross-modal architecture search:
+    - Fusion mechanisms
+    - Modal alignment
+    - Attention routing
+  </Card>
+</CardGroup>
 
-### Experiment Setup
+## Vision Transformer Study
 
+<Tabs>
+  <Tab title="Problem">
+    <Steps>
+      1. **Objective**
+         - Reduce computational cost by 50%
+         - Maintain >98% accuracy relative to baseline
+         - Improve inference latency
+      
+      2. **Constraints**
+         - Maximum model size: 100M parameters
+         - Target hardware: NVIDIA T4 GPU
+         - Batch inference requirements
+    </Steps>
+  </Tab>
+  
+  <Tab title="Solution">
+    <CodeGroup>
+    ```python Configuration
+    search_config = {
+        "patch_sizes": [8, 16, 32],
+        "num_layers": range(8, 24),
+        "hidden_dim": range(256, 1024, 64),
+        "num_heads": [4, 8, 12, 16],
+        "mlp_ratio": [2.0, 3.0, 4.0]
+    }
+    
+    constraints = [
+        lambda x: compute_params(x) < 100e6,
+        lambda x: estimate_latency(x) < target_latency
+    ]
+    ```
+
+    ```python Search
+    # Initialize search
+    search = ArchitectureSearch(
+        space="vision_transformer",
+        config=search_config,
+        constraints=constraints,
+        objectives={
+            "accuracy": "maximize",
+            "latency": "minimize"
+        }
+    )
+
+    # Run exploration
+    results = search.run(
+        max_trials=1000,
+        use_meta_learning=True
+    )
+    ```
+    </CodeGroup>
+
+  </Tab>
+  
+  <Tab title="Results">
+    <CardGroup cols={2}>
+      <Card title="Performance" icon="chart-line">
+        - 48% compute reduction
+        - 99.1% baseline accuracy
+        - 2.1x inference speedup
+      </Card>
+      
+      <Card title="Architecture" icon="microchip">
+        - 16 layers (↓33%)
+        - 512 hidden dim
+        - 8 attention heads
+      </Card>
+    </CardGroup>
+  </Tab>
+</Tabs>
+
+## Language Model Study
+
+<Accordion title="Search Strategy">
+  The exploration focused on three key areas:
+  - Attention mechanism variants
+  - Feed-forward network designs
+  - Layer composition patterns
+</Accordion>
+
+<Accordion title="Key Findings">
 ```python
-experiment_config = {
-    "name": "vit_search",
-    "architecture_type": "vision_transformer",
-    "search_space": {
-        "num_layers": [4, 12],
-        "num_heads": [4, 16],
-        "mlp_ratio": [2.0, 4.0],
-        "patch_size": [8, 16, 32]
+# Best architecture configuration
+optimal_config = {
+    "num_layers": 24,
+    "hidden_dim": 1024,
+    "attention": {
+        "type": "sparse_local",
+        "window_size": 256,
+        "num_global_tokens": 8
     },
-    "objectives": ["accuracy", "flops"],
-    "dataset": "imagenet",
-    "max_trials": 100
+    "ffn": {
+        "expansion_factor": 2.5,
+        "activation": "swiglu"
+    }
 }
-```
 
-### Key Findings
+# Performance metrics
 
-1. **Architecture Patterns**
+metrics = {
+"perplexity": 15.3, # ↓12% from baseline
+"throughput": 45000, # tokens/sec
+"memory": 11.2, # GB
+"params": 354e6 # ↓28% from baseline
+}
 
-   - Optimal depth-width ratio
-   - Patch size impact
-   - Attention head scaling
+````
+</Accordion>
 
-2. **Performance Trade-offs**
-   - Accuracy vs. computation
-   - Memory vs. speed
-   - Training stability
+## Graph Neural Network Study
 
-### Visualization
+<Info>
+  This study explored novel message-passing architectures for molecular property prediction.
+</Info>
 
-```python
-# Plot accuracy vs. FLOPs trade-off
-plt.figure(figsize=(10, 6))
-plt.scatter(results["flops"], results["accuracy"])
-plt.xlabel("FLOPs (G)")
-plt.ylabel("Top-1 Accuracy (%)")
-```
+<Steps>
+  1. **Architecture Space**
+     - Message function variants
+     - Aggregation operations
+     - Update network designs
 
-## Case Study 2: Efficient ConvNets
+  2. **Search Process**
+     - Multi-objective optimization
+     - Performance on multiple datasets
+     - Scalability testing
 
-### Search Configuration
+  3. **Validation**
+     - Cross-dataset evaluation
+     - Ablation studies
+     - Comparison with SOTA
+</Steps>
 
-```python
-efficient_net_space = {
-    "name": "efficient_net_search",
-    "architecture_type": "conv_net",
-    "search_space": {
-        "depth_multiplier": [0.5, 2.0],
-        "width_multiplier": [0.5, 2.0],
-        "resolution": [160, 320],
-        "se_ratio": [0.0, 0.25]
+<CodeGroup>
+```python Architecture
+class OptimalGNN(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.message_nn = MLP(
+            [64, 128, 64],
+            activation="swish"
+        )
+        self.update_nn = GRUCell(64)
+        self.aggregate = lambda x: torch.stack([
+            scatter_mean(x),
+            scatter_max(x)[0]
+        ], dim=-1)
+````
+
+```python Results
+# Performance on benchmark datasets
+results = {
+    "ZINC": {
+        "mae": 0.108,          # State-of-the-art
+        "compute": 45.3,       # GFLOPs
+        "params": 0.5e6        # Parameters
     },
-    "constraints": {
-        "max_params": "10M",
-        "max_latency": "100ms"
+    "QM9": {
+        "mae": 0.071,          # Top-3 performance
+        "compute": 52.1,       # GFLOPs
+        "params": 0.6e6        # Parameters
     }
 }
 ```
 
-### Results Analysis
+</CodeGroup>
 
-1. **Scaling Laws**
+## Multi-Modal Study
 
-   - Compound scaling effects
-   - Resolution impact
-   - Width-depth balance
+<Warning>
+  Multi-modal architecture search is particularly challenging due to the need to balance multiple modality-specific objectives.
+</Warning>
 
-2. **Efficiency Insights**
-   - Parameter utilization
-   - Activation memory
-   - Inference speed
-
-### Performance Profile
-
-```python
-# Analyze parameter efficiency
-efficiency_metrics = {
-    "params_utilization": params / accuracy,
-    "memory_efficiency": activation_memory / throughput,
-    "speed_efficiency": latency * batch_size
-}
-```
-
-## Case Study 3: Meta-Learning Transfer
-
-### Experiment Design
-
-```python
-transfer_experiment = {
-    "source_task": {
-        "dataset": "cifar10",
-        "metric": "accuracy",
-        "budget": "small"
-    },
-    "target_task": {
-        "dataset": "imagenet",
-        "metric": "accuracy",
-        "budget": "large"
-    },
-    "transfer_strategy": "warm_start"
-}
-```
-
-### Transfer Results
-
-1. **Knowledge Transfer**
-
-   - Architecture motifs
-   - Optimization hints
-   - Constraint mapping
-
-2. **Efficiency Gains**
-   - Search acceleration
-   - Quality improvement
-   - Resource savings
-
-### Visualization
-
-```python
-# Compare search trajectories
-plt.plot(baseline_progress, label="From Scratch")
-plt.plot(transfer_progress, label="With Transfer")
-plt.title("Search Progress Comparison")
-```
-
-## Case Study 4: Multi-Objective Search
-
-### Problem Setup
-
-```python
-multi_objective_config = {
-    "objectives": {
-        "accuracy": {"weight": 1.0},
-        "latency": {"weight": -0.5},
-        "memory": {"weight": -0.3}
-    },
-    "constraints": {
-        "max_params": "5M",
-        "min_accuracy": 0.75
-    },
-    "search_strategy": "pareto"
-}
-```
-
-### Pareto Analysis
-
-1. **Trade-off Surface**
-
-   - Pareto frontier
-   - Knee points
-   - Dominated solutions
-
-2. **Decision Making**
-   - Operating points
-   - Resource constraints
-   - Performance bounds
-
-### Visualization
-
-```python
-# Plot 3D Pareto surface
-fig = plt.figure(figsize=(10, 10))
-ax = fig.add_subplot(111, projection='3d')
-scatter = ax.scatter(
-    accuracy,
-    latency,
-    memory,
-    c=pareto_rank
-)
-```
-
-## Case Study 5: Robustness Study
-
-### Experiment Design
-
-```python
-robustness_study = {
-    "perturbations": {
-        "input_noise": [0.1, 0.2, 0.3],
-        "adversarial": ["fgsm", "pgd"],
-        "corruption": ["gaussian", "shot", "impulse"]
-    },
-    "metrics": [
-        "clean_accuracy",
-        "corrupt_accuracy",
-        "adversarial_accuracy"
-    ]
-}
-```
-
-### Key Insights
-
-1. **Robustness Patterns**
-
-   - Architecture features
-   - Regularization effects
-   - Stability factors
-
-2. **Trade-offs**
-   - Clean vs. robust accuracy
-   - Model size impact
-   - Training cost
-
-### Analysis
-
-```python
-# Compute robustness metrics
-robustness_scores = {
-    "corruption_resistance": corrupt_acc / clean_acc,
-    "adversarial_robustness": adv_acc / clean_acc,
-    "stability_index": np.std(test_accuracies)
-}
-```
+<CardGroup cols={2}>
+  <Card title="Vision-Language" icon="image">
+    Achievements:
+    - 95% SOTA performance
+    - 40% parameter reduction
+    - Improved alignment
+  </Card>
+  
+  <Card title="Audio-Visual" icon="wave-square">
+    Results:
+    - Real-time processing
+    - Robust synchronization
+    - Efficient fusion
+  </Card>
+</CardGroup>
 
 ## Lessons Learned
 
-### Best Practices
-
-1. **Search Strategy**
-
-   - Start broad, then focus
-   - Use meta-learning
-   - Monitor diversity
-
-2. **Resource Usage**
-   - Smart initialization
-   - Early stopping
-   - Parallel evaluation
-
-### Common Pitfalls
-
-<Accordion title="Search Issues">
-- Poor initialization
-- Premature convergence
-- Constraint violations
-</Accordion>
-
-<Accordion title="Evaluation Problems">
-- Noisy measurements
-- Incomplete testing
-- Biased sampling
-</Accordion>
-
-## Future Directions
-
-### Research Opportunities
-
-1. **Advanced Search**
-
-   - Multi-fidelity optimization
-   - Neural predictor models
-   - Adaptive strategies
-
-2. **Applications**
-   - Specialized architectures
-   - New domains
-   - Hardware co-design
+<Tabs>
+  <Tab title="Search Strategy">
+    <Steps>
+      1. **Start Broad**
+         - Wide initial exploration
+         - Diverse architecture families
+         - Multiple objectives
+      
+      2. **Refine Gradually**
+         - Focus on promising regions
+         - Fine-tune components
+         - Validate assumptions
+    </Steps>
+  </Tab>
+  
+  <Tab title="Common Patterns">
+    <CardGroup cols={2}>
+      <Card title="Success Patterns" icon="check">
+        - Residual connections
+        - Attention mechanisms
+        - Hierarchical structure
+      </Card>
+      
+      <Card title="Failure Patterns" icon="xmark">
+        - Excessive depth
+        - Dense connectivity
+        - Complex routing
+      </Card>
+    </CardGroup>
+  </Tab>
+</Tabs>
 
 ## Next Steps
 
-- Learn about [meta-learning](/research/meta-learning-insights)
-- Explore [visualization](/guides/visualize-results)
-- Study [architecture space](/research/sphere-metaphor)
+<Check>
+  To apply these insights to your own experiments:
+  - Study the [sphere metaphor](/research/sphere-metaphor)
+  - Learn about [meta-learning](/research/meta-learning-insights)
+  - Follow the [visualization guide](/guides/visualize-results)
+</Check>
