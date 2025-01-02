@@ -1,7 +1,7 @@
 """
 dashboard.py
 
-This file initializes the Dash application for the NeuraMosaic frontend.
+This file initializes the Dash application for the Neuromosaic frontend.
 It sets up the layout, registers the callbacks, and provides an entry point
 to run the server. The dashboard provides an interactive visualization of
 the architecture search space and experiment results.

@@ -26,6 +26,11 @@ const petalColors = [
     mid: "#9333ea", // Purple
     end: "#2e2066", // Deep purple
   },
+  {
+    start: "#ffadc0", // Peach
+    mid: "#ffc7d3", // Light peach
+    end: "#ffeef2", // Ultralight peach
+  },
 ];
 
 /** Scene / physics parameters */

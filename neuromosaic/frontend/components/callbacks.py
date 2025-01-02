@@ -1,7 +1,7 @@
 """
 callbacks.py
 
-Defines all Dash callbacks for interactivity within the NeuraMosaic dashboard.
+Defines all Dash callbacks for interactivity within the Neuromosaic dashboard.
 Handles events such as:
 - Clicking points in the 3D scatter plot
 - Updating metric visualizations

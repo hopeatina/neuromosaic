@@ -1,6 +1,6 @@
 # Frontend Development Guide
 
-This guide covers the development and customization of the NeuraMosaic dashboard interface.
+This guide covers the development and customization of the Neuromosaic dashboard interface.
 
 ## Architecture Overview
 

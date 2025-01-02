@@ -3,7 +3,7 @@ components/__init__.py
 
 This file indicates that 'components' is a Python package for 
 various dashboard UI parts. It provides access to the core building
-blocks of the NeuraMosaic dashboard:
+blocks of the Neuromosaic dashboard:
 
 - Layout: Overall dashboard structure and UI organization
 - Callbacks: Interactive behavior handlers

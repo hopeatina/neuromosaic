@@ -36,6 +36,13 @@ const config: Config = {
           ultralight: '#f3f1ff', // New ultralight lavender
           faded: '#f8f7ff', // New faded lavender
         },
+        peach: {
+          DEFAULT: '#ffadc0', // Pinkish-peach highlight
+          hover: '#ffa5b8',
+          light: '#ffc7d3',
+          ultralight: '#ffeef2',
+          faded: '#fff6f8',
+        },
         neutral: {
           100: '#f4f4f4',
           200: '#e4e4e7',
@@ -90,6 +97,7 @@ const config: Config = {
         'gradient-dark': 'linear-gradient(180deg, rgba(12, 12, 28, 0.8) 0%, rgba(12, 12, 28, 0.95) 100%)',
         'gradient-hero': 'radial-gradient(circle at top, var(--tw-gradient-stops))',
         'gradient-glow': 'radial-gradient(circle at center, var(--tw-gradient-stops))',
+        'gradient-neuromosaic': 'radial-gradient(circle, #2e2066 0%, #7c71d8 30%, #bf3abb 60%, #ffadc0 85%, #ffeef2 100%)',
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',

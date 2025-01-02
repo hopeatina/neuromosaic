@@ -1,14 +1,14 @@
-# NeuraMosaic
+# Neuromosaic
 
-NeuraMosaic is a research and development platform that explores and optimizes novel neural network architectures—ranging from standard transformer models to brain-inspired designs—using a combination of automated code generation (via Large Language Models), compositional search spaces, and meta-learning.
+Neuromosaic is a research and development platform that explores and optimizes novel neural network architectures—ranging from standard transformer models to brain-inspired designs—using a combination of automated code generation (via Large Language Models), compositional search spaces, and meta-learning.
 
-The core idea is to represent each architecture as a structured vector in a flexible "architecture embedding space." This space defines what building blocks a model is made of, how they fit together, and the numeric 'magic numbers' (hyperparameters) that shape their behaviors. NeuraMosaic then uses these vector representations to automatically generate code for new architectures, train and evaluate them on small tasks, and learn which directions in this space are most promising. Over time, it refines its search, guided by performance metrics and insights from research literature.
+The core idea is to represent each architecture as a structured vector in a flexible "architecture embedding space." This space defines what building blocks a model is made of, how they fit together, and the numeric 'magic numbers' (hyperparameters) that shape their behaviors. Neuromosaic then uses these vector representations to automatically generate code for new architectures, train and evaluate them on small tasks, and learn which directions in this space are most promising. Over time, it refines its search, guided by performance metrics and insights from research literature.
 
 ## In short:
 
-NeuraMosaic helps you discover, understand, and evolve custom neural architectures, blending automated code generation with systematic exploration to find better models efficiently.
+Neuromosaic helps you discover, understand, and evolve custom neural architectures, blending automated code generation with systematic exploration to find better models efficiently.
 
-## Why NeuraMosaic?
+## Why Neuromosaic?
 
 - **Composable Architectures**: Move beyond predefined sets of layers and architectures.
 - **Automated Code Generation**: Turn architecture "vectors" directly into runnable model code via LLM prompts.
@@ -150,7 +150,7 @@ Below is a high-level view of how all components interact:
 
 ## Interactive Dashboard
 
-NeuraMosaic includes a powerful web-based dashboard for visualizing and interacting with the architecture search space. The dashboard provides real-time insights into experiments, architecture performance, and search progress.
+Neuromosaic includes a powerful web-based dashboard for visualizing and interacting with the architecture search space. The dashboard provides real-time insights into experiments, architecture performance, and search progress.
 
 ### Key Features
 

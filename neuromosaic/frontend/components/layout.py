@@ -1,7 +1,7 @@
 """
 layout.py
 
-Defines the top-level Dash layout for the NeuraMosaic dashboard.
+Defines the top-level Dash layout for the Neuromosaic dashboard.
 Organizes main containers, sidebars, and placeholders for interactive
 plots and data displays. The layout is built using Bootstrap components
 for a responsive and modern design.
