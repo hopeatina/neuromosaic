@@ -15,7 +15,7 @@ description: "Set up Neuromosaic and run your first architecture exploration"
 <Steps>
   1. **Clone the Repository**
      ```bash
-     git clone https://github.com/neuromosaic/neuromosaic.git
+     git clone https://github.com/hopeatina/neruromosaic/neuromosaic.git
      cd neuromosaic
      ```
 
@@ -203,7 +203,7 @@ description: "Set up Neuromosaic and run your first architecture exploration"
 </Check>
 
 <Info>
-  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/neuromosaic/neuromosaic/issues).
+  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/hopeatina/neruromosaic/neuromosaic/issues).
   
   Full documentation: [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
 </Info>

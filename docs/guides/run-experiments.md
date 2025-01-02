@@ -204,7 +204,7 @@ Available Now:
 </Check>
 
 <Info>
-  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/neuromosaic/neuromosaic/issues).
+  Need help? Join our [Discord community](https://discord.gg/neuromosaic) or check our [GitHub Issues](https://github.com/hopeatina/neruromosaic/neuromosaic/issues).
   
   Full documentation: [https://neuromosaic.mintlify.app/](https://neuromosaic.mintlify.app/)
 </Info>

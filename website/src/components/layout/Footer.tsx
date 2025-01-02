@@ -14,7 +14,7 @@ const navigation = {
   social: [
     {
       name: "GitHub",
-      href: "https://github.com/neuromosaic",
+      href: "https://github.com/hopeatina/neruromosaic",
       icon: (props: React.ComponentProps<"svg">) => (
         <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
           <path

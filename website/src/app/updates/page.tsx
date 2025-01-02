@@ -5,7 +5,16 @@ import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
-import { Sparkles, Users, Cpu, BarChart3, GitMerge, Zap } from "lucide-react";
+import {
+  Sparkles,
+  Users,
+  Cpu,
+  BarChart3,
+  GitMerge,
+  Zap,
+  LineChart,
+  Shield,
+} from "lucide-react";
 import Link from "next/link";
 import type { FC } from "react";
 
@@ -85,22 +94,28 @@ const updates = [
 ];
 
 interface RoadmapCardProps {
-  quarter: string;
+  month: string;
+  title: string;
   items: string[];
   icon: React.ReactNode;
 }
 
-const RoadmapCard: FC<RoadmapCardProps> = ({ quarter, items, icon }) => (
-  <Card className="group p-6 hover:shadow-lg transition-all duration-300 bg-white/80 backdrop-blur-sm border border-gray-100">
-    <div className="flex items-start gap-4 mb-6">
+const RoadmapCard: FC<RoadmapCardProps> = ({ month, title, items, icon }) => (
+  <Card className="group p-6 hover:shadow-lg transition-all duration-300 bg-white/80 backdrop-blur-sm border border-gray-100 h-[32rem] flex flex-col">
+    <div className="flex items-start gap-4 mb-4">
       <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors duration-300">
         {icon}
       </div>
-      <Text as="h3" variant="h3" className="text-primary">
-        {quarter}
-      </Text>
+      <div>
+        <Text as="h3" variant="small" className="text-primary mb-1">
+          {month}
+        </Text>
+        <Text as="h4" variant="h3" className="text-primary">
+          {title}
+        </Text>
+      </div>
     </div>
-    <ul className="space-y-4">
+    <ul className="space-y-3 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent pr-2">
       {items.map((item) => (
         <li key={item} className="flex items-start gap-3">
           <span className="block w-2 h-2 mt-2 rounded-full bg-primary shrink-0" />
@@ -118,22 +133,160 @@ const RoadmapCard: FC<RoadmapCardProps> = ({ quarter, items, icon }) => (
 
 const roadmap = [
   {
-    quarter: "Q2 2024",
+    month: "January 2025",
+    title: "Enhanced Monitoring & Analytics",
     items: [
-      "Enhanced monitoring and analytics dashboard",
-      "Improved resource allocation algorithms",
-      "Extended API documentation",
+      "Release improved dashboard for real-time experiment tracking and resource usage metrics",
+      "Incorporate user feedback loops for bug reports and feature requests",
+      "Lay groundwork for dynamic resource scheduling across distributed nodes",
+      "Begin Kubernetes integration for parallel experiments",
+      "Publish initial API documentation drafts",
+      "Solicit early feedback from developer community",
     ],
     icon: <BarChart3 size={24} />,
   },
   {
-    quarter: "Q3 2024",
+    month: "February 2025",
+    title: "Resource Management & Versioning",
     items: [
-      "Advanced model versioning system",
-      "Automated performance optimization",
-      "Community contribution rewards",
+      "Implement intelligent resource allocation based on experiment priority",
+      "Introduce auto-pause feature for idle containers",
+      "Launch minimal UI for model state rollbacks",
+      "Link model versions to unique commits for quick comparisons",
+      "Host interactive webinars for analytics dashboard",
+      "Release beginner-friendly getting started guides",
+    ],
+    icon: <Cpu size={24} />,
+  },
+  {
+    month: "March 2025",
+    title: "Documentation & Optimization",
+    items: [
+      "Publish guides for third-party data pipeline integration",
+      "Expand How-To sections for advanced configuration",
+      "Launch alpha version of automated hyperparameter tuning",
+      "Integrate performance results into monitoring dashboard",
+      "Begin SSO integration testing",
+      "Enable private data usage for select organizations",
     ],
     icon: <GitMerge size={24} />,
+  },
+  {
+    month: "April 2025",
+    title: "Version Control & Security",
+    items: [
+      "Enhance version control for datasets and environments",
+      "Implement branching strategies for team experimentation",
+      "Launch prototype of contribution rewards system",
+      "Integrate rewards with user profiles",
+      "Harden authentication workflows",
+      "Add encryption for sensitive model parameters",
+    ],
+    icon: <Zap size={24} />,
+  },
+  {
+    month: "May 2025",
+    title: "Optimization & Collaboration",
+    items: [
+      "Expand optimization with Bayesian and evolutionary strategies",
+      "Add Results Summaries section for top models",
+      "Launch team-based dashboards for collaboration",
+      "Introduce role-based permissions",
+      "Release 2D/3D architecture embedding visualizations",
+      "Highlight performance clusters in visualizations",
+    ],
+    icon: <LineChart size={24} />,
+  },
+  {
+    month: "June 2025",
+    title: "Community & Infrastructure",
+    items: [
+      "Enhance rewards with leaderboards and specific tasks",
+      "Host first Community Challenge",
+      "Add built-in data transformations and augmentations",
+      "Implement unified data lineage tracking",
+      "Demonstrate large-scale cluster experiments",
+      "Publish benchmark metrics for scalability",
+    ],
+    icon: <Users size={24} />,
+  },
+  {
+    month: "July 2025",
+    title: "Integration & Learning",
+    items: [
+      "Release plugins for PyTorch Lightning and Hugging Face",
+      "Enhance CLI for batch experiments",
+      "Improve meta-learning for architecture space exploration",
+      "Incorporate recent research heuristics",
+      "Launch unified knowledge base",
+      "Create interactive Jupyter notebook tutorials",
+    ],
+    icon: <GitMerge size={24} />,
+  },
+  {
+    month: "August 2025",
+    title: "Enterprise & Governance",
+    items: [
+      "Launch enterprise SSO and security features",
+      "Implement advanced governance policies",
+      "Create visible audit trails",
+      "Organize major community hackathon",
+      "Host expert talks and AMA sessions",
+      "Document enterprise support tiers",
+    ],
+    icon: <Shield size={24} />,
+  },
+  {
+    month: "September 2025",
+    title: "Optimization & Insights",
+    items: [
+      "Release final optimization algorithm suite",
+      "Launch preset Search Profiles by task",
+      "Add automated Research Summaries",
+      "Integrate paper-inspired modules",
+      "Enable experiment following",
+      "Implement social discussion features",
+    ],
+    icon: <Sparkles size={24} />,
+  },
+  {
+    month: "October 2025",
+    title: "Architecture & Benchmarks",
+    items: [
+      "Complete microservices transition",
+      "Document API migration paths",
+      "Launch standardized benchmark suite",
+      "Publish monthly leaderboards",
+      "Enable custom dashboard creation",
+      "Launch community marketplace",
+    ],
+    icon: <BarChart3 size={24} />,
+  },
+  {
+    month: "November 2025",
+    title: "Safety & Deployment",
+    items: [
+      "Implement AI safety and ethics checks",
+      "Add dataset bias detection",
+      "Launch edge device deployment support",
+      "Begin IoT pilot projects",
+      "Establish ecosystem partnerships",
+      "Create verified module program",
+    ],
+    icon: <Shield size={24} />,
+  },
+  {
+    month: "December 2025",
+    title: "Summit & Future Planning",
+    items: [
+      "Host Neuromosaic Summit",
+      "Release annual platform report",
+      "Optimize platform performance footprint",
+      "Plan next-year innovations",
+      "Complete documentation freeze",
+      "Prepare 2026 roadmap",
+    ],
+    icon: <Sparkles size={24} />,
   },
 ];
 
@@ -274,18 +427,28 @@ export default function UpdatesPage() {
               experience.
             </Text>
           </motion.div>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            {roadmap.map((quarter, index) => (
-              <motion.div
-                key={quarter.quarter}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <RoadmapCard {...quarter} />
-              </motion.div>
-            ))}
+          <div className="relative">
+            {/* Left gradient fade */}
+            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-accent-ultralight to-transparent z-10" />
+            {/* Right gradient fade */}
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-accent-ultralight to-transparent z-10" />
+
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent scroll-smooth snap-x snap-mandatory">
+              <div className="inline-flex gap-8 pb-4 px-8">
+                {roadmap.map((quarter, index) => (
+                  <motion.div
+                    key={quarter.month}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="w-[400px] flex-shrink-0 snap-center"
+                  >
+                    <RoadmapCard {...quarter} />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
           </div>
         </Container>
       </div>

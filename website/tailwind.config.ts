@@ -1,11 +1,9 @@
 import type { Config } from "tailwindcss";
+import scrollbar from "tailwind-scrollbar";
+import animate from "tailwindcss-animate";
 
-const config: Config = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+export default {
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
@@ -119,7 +117,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
-};
-
-export default config;
+  plugins: [
+    animate,
+    scrollbar({ nocompatible: true }),
+  ],
+} satisfies Config;
