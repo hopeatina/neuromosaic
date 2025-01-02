@@ -102,10 +102,13 @@ export default function GetInvolvedPage() {
       <div className="relative py-16 sm:py-24 bg-gradient-hero from-background-dark via-background-dark/95 to-background-dark/90 text-white">
         <Container>
           <div className="mx-auto max-w-2xl text-center">
-            <Text as="h1" variant="display" className="mb-6">
+            <Text as="h1" variant="display" className="mb-6 text-center">
               Get Involved
             </Text>
-            <Text variant="body-lg" className="mb-8 text-neutral-200">
+            <Text
+              variant="body-lg"
+              className="mb-8 text-neutral-200 text-center"
+            >
               Join our community of researchers, developers, and AI enthusiasts.
               Together, we're building the future of distributed AI development.
             </Text>
@@ -136,17 +139,19 @@ export default function GetInvolvedPage() {
 
       {/* Contribution areas */}
       <Container className="py-16">
-        <Text as="h2" variant="h1" className="mb-6 text-center">
-          Ways to Contribute
-        </Text>
-        <Text
-          variant="body-lg"
-          textColor="muted"
-          className="mb-12 text-center max-w-2xl mx-auto"
-        >
-          Choose your path and start contributing to areas that match your
-          interests and expertise.
-        </Text>
+        <div className="text-center mb-12">
+          <Text as="h2" variant="h1" className="mb-6 text-center">
+            Ways to Contribute
+          </Text>
+          <Text
+            variant="body-lg"
+            textColor="muted"
+            className="mb-12 text-center max-w-2xl mx-auto"
+          >
+            Choose your path and start contributing to areas that match your
+            interests and expertise.
+          </Text>
+        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {contributionAreas.map((area) => (
             <Card

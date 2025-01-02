@@ -3,17 +3,19 @@
 import { FC } from "react";
 import { motion } from "framer-motion";
 import { Text } from "@/components/ui/Text";
+import { UserPlus, FlaskConical, Cpu, LineChart, Share } from "lucide-react";
 
 interface StepProps {
   number: number;
   title: string;
   description: string;
+  icon: React.ReactNode;
 }
 
-const Step: FC<StepProps> = ({ number, title, description }) => (
+const Step: FC<StepProps> = ({ number, title, description, icon }) => (
   <div className="group flex gap-6 items-start p-4 rounded-2xl hover:bg-gray-50 transition-colors duration-300">
     <div className="flex-shrink-0 w-12 h-12 bg-primary/90 group-hover:bg-primary shadow-md group-hover:shadow-lg rounded-xl flex items-center justify-center transition-all duration-300">
-      <Text className="text-white font-bold">{number}</Text>
+      {icon}
     </div>
     <div className="flex-1">
       <Text
@@ -34,26 +36,31 @@ const steps = [
     title: "Sign Up & Configure",
     description:
       "Create an account, set up your local environment or use your favorite cloud service.",
+    icon: <UserPlus size={24} className="text-white" />,
   },
   {
     title: "Select or Create an Experiment",
     description:
       "Browse existing experiments or propose a new idea to explore.",
+    icon: <FlaskConical size={24} className="text-white" />,
   },
   {
     title: "Contribute Compute & Expertise",
     description:
       "Run training locally or on your organization's servers, then sync results.",
+    icon: <Cpu size={24} className="text-white" />,
   },
   {
     title: "Analyze & Iterate",
     description:
       "Neuromosaic aggregates experiment outputs, surfaces insights, and suggests next steps.",
+    icon: <LineChart size={24} className="text-white" />,
   },
   {
     title: "Publish & Collaborate",
     description:
       "Share your improved model, get feedback from peers, and contribute to someone else's experiment.",
+    icon: <Share size={24} className="text-white" />,
   },
 ];
 
@@ -91,6 +98,7 @@ export const HowItWorks: FC = () => {
               number={index + 1}
               title={step.title}
               description={step.description}
+              icon={step.icon}
             />
           ))}
         </div>

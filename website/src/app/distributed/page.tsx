@@ -117,10 +117,17 @@ export default function DistributedPage() {
       <div className="relative py-16 sm:py-24 bg-gradient-hero from-background-dark via-background-dark/95 to-background-dark/90">
         <Container>
           <div className="mx-auto max-w-2xl text-center">
-            <Text as="h1" variant="display" className="mb-6 text-white">
+            <Text
+              as="h1"
+              variant="display"
+              className="mb-6 text-white text-center"
+            >
               Distributed Platform
             </Text>
-            <Text variant="body-lg" className="mb-8 text-neutral-200">
+            <Text
+              variant="body-lg"
+              className="mb-8 text-neutral-200 text-center"
+            >
               Harness the power of distributed computing for AI model training
               and experimentation. Our platform enables efficient resource
               utilization and seamless collaboration across nodes.
@@ -153,17 +160,19 @@ export default function DistributedPage() {
 
       {/* Features */}
       <Container className="py-16">
-        <Text as="h2" variant="h1" className="mb-6 text-center">
-          Platform Features
-        </Text>
-        <Text
-          variant="body-lg"
-          textColor="muted"
-          className="mb-12 text-center max-w-2xl mx-auto"
-        >
-          Our distributed platform is built for performance, scalability, and
-          ease of use.
-        </Text>
+        <div className="text-center mb-12">
+          <Text as="h2" variant="h1" className="mb-6 text-center">
+            Platform Features
+          </Text>
+          <Text
+            variant="body-lg"
+            textColor="muted"
+            className="mb-12 text-center max-w-2xl mx-auto"
+          >
+            Our distributed platform is built for performance, scalability, and
+            ease of use.
+          </Text>
+        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {features.map((feature) => (
             <Card
@@ -243,10 +252,10 @@ export default function DistributedPage() {
       {/* CTA section */}
       <Container className="py-16">
         <Card className="p-8 text-center bg-gradient-primary text-white">
-          <Text as="h2" variant="h2" className="mb-4">
+          <Text as="h2" variant="h2" className="mb-4 text-center">
             Ready to Join?
           </Text>
-          <Text className="mb-8 max-w-2xl mx-auto text-white/90">
+          <Text className="mb-8 max-w-2xl mx-auto text-center text-white/90">
             Be part of our distributed computing network and help accelerate AI
             development. Early contributors receive priority access and
             additional benefits.

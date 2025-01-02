@@ -4,14 +4,16 @@ import { FC } from "react";
 import { motion } from "framer-motion";
 import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
+import { GraduationCap, Rocket, Code2 } from "lucide-react";
 
 interface UseCaseProps {
   title: string;
   description: string;
   index: number;
+  icon: React.ReactNode;
 }
 
-const UseCase: FC<UseCaseProps> = ({ title, description, index }) => (
+const UseCase: FC<UseCaseProps> = ({ title, description, index, icon }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -19,15 +21,22 @@ const UseCase: FC<UseCaseProps> = ({ title, description, index }) => (
     viewport={{ once: true }}
   >
     <Card className="group h-full p-8 hover:shadow-lg transition-all duration-300 bg-white/80 backdrop-blur-sm border border-gray-100">
-      <Text
-        variant="h3"
-        className="text-xl font-semibold mb-4 text-primary group-hover:text-primary/80 transition-colors duration-300"
-      >
-        {title}
-      </Text>
-      <Text className="text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-        {description}
-      </Text>
+      <div className="flex items-start gap-4">
+        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors duration-300">
+          {icon}
+        </div>
+        <div>
+          <Text
+            variant="h3"
+            className="text-xl font-semibold mb-4 text-primary group-hover:text-primary/80 transition-colors duration-300"
+          >
+            {title}
+          </Text>
+          <Text className="text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+            {description}
+          </Text>
+        </div>
+      </div>
     </Card>
   </motion.div>
 );
@@ -37,16 +46,19 @@ const useCases = [
     title: "Academic Researchers",
     description:
       "Tap into a global ML community to run large-scale experiments you couldn't otherwise afford.",
+    icon: <GraduationCap size={24} />,
   },
   {
     title: "Startups",
     description:
       "Accelerate innovation by accessing shared knowledge and compute without building everything from scratch.",
+    icon: <Rocket size={24} />,
   },
   {
     title: "Independent ML Enthusiasts",
     description:
       "Experiment with cutting-edge models in a supportive environment—level up your skills while contributing real value.",
+    icon: <Code2 size={24} />,
   },
 ];
 
@@ -84,6 +96,7 @@ export const UseCases: FC = () => {
               index={index}
               title={useCase.title}
               description={useCase.description}
+              icon={useCase.icon}
             />
           ))}
         </div>

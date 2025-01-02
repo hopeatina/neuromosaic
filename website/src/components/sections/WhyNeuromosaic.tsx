@@ -2,20 +2,29 @@ import { FC } from "react";
 import { Text } from "@/components/ui/Text";
 import { Card } from "@/components/ui/Card";
 import { motion } from "framer-motion";
+import { Network, Users2, GitBranch, Lightbulb, Share2 } from "lucide-react";
 
 interface BenefitProps {
   title: string;
   description: string;
+  icon: React.ReactNode;
 }
 
-const Benefit: FC<BenefitProps> = ({ title, description }) => (
+const Benefit: FC<BenefitProps> = ({ title, description, icon }) => (
   <Card className="group p-6 hover:shadow-lg transition-shadow duration-300 bg-white/80 backdrop-blur-sm">
-    <Text variant="h3" className="mb-3 text-lg font-semibold text-primary">
-      {title}
-    </Text>
-    <Text className="text-gray-600 group-hover:text-gray-800 transition-colors duration-300">
-      {description}
-    </Text>
+    <div className="flex items-start gap-4">
+      <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors duration-300">
+        {icon}
+      </div>
+      <div>
+        <Text variant="h3" className="mb-3 text-lg font-semibold text-primary">
+          {title}
+        </Text>
+        <Text className="text-gray-600 group-hover:text-gray-800 transition-colors duration-300">
+          {description}
+        </Text>
+      </div>
+    </div>
   </Card>
 );
 
@@ -24,25 +33,30 @@ const benefits = [
     title: "Distributed Training",
     description:
       "Leverage collective computing power to handle large-scale experiments.",
+    icon: <Network size={24} />,
   },
   {
     title: "Community-Driven Innovation",
     description:
       "Collaborate with peers worldwide to push ML frontiers faster.",
+    icon: <Users2 size={24} />,
   },
   {
     title: "Iterative Refinement",
     description:
       "Systematic experimentation ensures continuous improvement of models.",
+    icon: <GitBranch size={24} />,
   },
   {
     title: "Lower Barriers to Entry",
     description:
       "Designed so that both beginners and veterans can contribute effectively.",
+    icon: <Lightbulb size={24} />,
   },
   {
     title: "Sharable Results & Insights",
     description: "Publish your model improvements for others to build upon.",
+    icon: <Share2 size={24} />,
   },
 ];
 
@@ -79,6 +93,7 @@ export const WhyNeuromosaic: FC = () => {
               key={index}
               title={benefit.title}
               description={benefit.description}
+              icon={benefit.icon}
             />
           ))}
         </div>
