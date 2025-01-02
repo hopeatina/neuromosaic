@@ -3,167 +3,200 @@ title: "Running Experiments"
 description: "Learn how to configure and run architecture search experiments"
 ---
 
-# Running Experiments
+<Note>
+  This guide explains how to configure and run architecture search experiments in NeuroMosaic.
+  Some advanced features described here are planned for future releases.
+</Note>
 
-This guide explains how to configure and run architecture search experiments in NeuroMosaic.
+## Quick Start
 
-## Experiment Configuration
+The fastest way to start is using the `quickstart` command:
 
-### Basic Settings
+```bash
+# Basic architecture search
+python -m neuromosaic quickstart
 
-```python
-experiment_config = {
-    "name": "resnet_search",
-    "search_space": "resnet",
-    "max_trials": 100,
-    "optimization_metric": "accuracy"
-}
+# With GPU and parallel execution
+python -m neuromosaic quickstart --gpu --batch-size 8
+
+# Customize output directory and use CPU
+python -m neuromosaic quickstart --output-dir my_search --cpu --batch-size 4
 ```
 
-### Search Space Definition
+## Custom Experiments
 
-1. **Architecture Type**
+For more control over the search process:
 
-   - Choose base architecture family
-   - Define parameter ranges
-   - Set constraints
+1. Create a custom configuration file (e.g., `custom_config.yaml`):
 
-2. **Optimization Goals**
-   - Primary metric (e.g., accuracy)
-   - Secondary objectives (e.g., latency)
-   - Constraints (e.g., model size)
+```yaml
+# Example configuration
+arch_space:
+  dimensions: 64
+  bounds:
+    num_layers: [2, 8]
+    hidden_size: [128, 512]
 
-## Running the Search
+search_strategy:
+  type: "bayesian_optimization"
+  num_trials: 10
+  dimensions: 64
 
-### Through the Dashboard
+training:
+  batch_size: 32
+  max_epochs: 5
+  learning_rate: 0.001
+  optimizer: "adam"
+  scheduler: "cosine"
+  metrics: ["accuracy", "loss", "latency", "memory_usage"]
 
-1. Navigate to "New Experiment"
-2. Fill in configuration form
-3. Click "Start Search"
-4. Monitor progress in real-time
-
-### Via API
-
-```python
-from neuromosaic.client import NeuroMosaicClient
-
-client = NeuroMosaicClient()
-experiment = client.create_experiment(experiment_config)
-experiment.start()
+container:
+  device: "cpu" # or "gpu"
+  memory_limit: "8GB"
+  num_cpus: 4
 ```
+
+2. Run the experiment:
+
+```bash
+# Run with custom configuration in parallel
+python -m neuromosaic experiment --config custom_config.yaml --output-dir custom_search --batch-size 8
+
+# Run sequentially
+python -m neuromosaic experiment --config custom_config.yaml --sequential
+
+# Resume a previous run
+python -m neuromosaic experiment --config custom_config.yaml --resume
+```
+
+## Available Commands
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="play">
+    Available Now:
+    - Basic architecture search
+    - GPU/CPU selection
+    - Parallel execution
+    - Output directory selection
+  </Card>
+  
+  <Card title="Custom Experiments" icon="sliders">
+    Available Now:
+    - Custom configuration
+    - Sequential/parallel execution
+    - Resume capability
+    - Basic metrics tracking
+  </Card>
+  
+  <Card title="Analysis (Coming Soon)" icon="chart-line">
+    - Compare experiments
+    - Generate reports
+    - Export results
+    - Visualize search space
+  </Card>
+  
+  <Card title="Advanced Features (Coming Soon)" icon="wand-magic-sparkles">
+    - Meta-learning optimization
+    - Distributed training
+    - Custom search strategies
+    - Advanced metrics
+  </Card>
+</CardGroup>
 
 ## Monitoring Progress
 
-### Key Metrics
+<Tabs>
+  <Tab title="Basic Monitoring">
+    Available Now:
+    ```bash
+    # View experiment logs
+    tail -f neuromosaic.log
 
-- Best architecture found
-- Search efficiency
-- Resource utilization
-- Convergence indicators
+    # Check experiment status
+    python -m neuromosaic experiment --config config.yaml --status
+    ```
 
-### Real-time Updates
+  </Tab>
+  
+  <Tab title="Advanced Monitoring (Coming Soon)">
+    ```python
+    # Real-time monitoring dashboard
+    python -m neuromosaic dashboard
+    
+    # Access at http://localhost:8050
+    ```
+  </Tab>
+</Tabs>
 
-1. **Dashboard Views**
+## Configuration Options
 
-   - 3D visualization of search progress
-   - Performance timeline
-   - Resource monitoring
+<Accordion title="Basic Settings">
+Available Now:
+- Experiment name
+- Search space definition
+- Number of trials
+- Resource limits
+</Accordion>
 
-2. **Logging**
-   - Detailed logs in `experiments/logs/`
-   - Metric history
-   - Search decisions
-
-## Search Strategies
-
-### Random Search
-
-```python
-strategy_config = {
-    "type": "random",
-    "num_samples": 100
-}
-```
-
-### Bayesian Optimization
-
-```python
-strategy_config = {
-    "type": "bayesian",
-    "acquisition_function": "expected_improvement",
-    "kernel": "matern"
-}
-```
-
-### Meta-Learning
-
-```python
-strategy_config = {
-    "type": "meta",
-    "prior_experiments": ["exp1", "exp2"],
-    "adaptation_rate": 0.1
-}
-```
-
-## Experiment Management
-
-### Saving Results
-
-1. **Automatic Saving**
-
-   - Best architectures
-   - Performance history
-   - Search trajectory
-
-2. **Manual Export**
-   - CSV/JSON formats
-   - Architecture configs
-   - Visualization states
-
-### Resuming Experiments
-
-```python
-# Resume from checkpoint
-experiment.resume(
-    checkpoint_path="experiments/checkpoints/exp_001/"
-)
-```
+<Accordion title="Advanced Settings (Coming Soon)">
+- Custom search strategies
+- Distributed resources
+- Meta-learning parameters
+- Advanced metrics
+</Accordion>
 
 ## Best Practices
 
-1. **Start Small**
+<Warning>
+  Start with the quickstart command to verify your setup before moving to custom experiments.
+</Warning>
 
-   - Begin with limited search space
-   - Validate setup with quick runs
-   - Gradually increase complexity
+<Steps>
+  1. **Initial Setup**
+     - Use quickstart command
+     - Verify basic functionality
+     - Check resource availability
 
-2. **Resource Management**
+2.  **Custom Configuration**
 
-   - Monitor GPU utilization
-   - Use appropriate batch sizes
-   - Enable early stopping
+    - Start with minimal changes
+    - Test configuration validity
+    - Monitor resource usage
 
-3. **Reproducibility**
-   - Set random seeds
-   - Version control configs
-   - Document environment
+3.  **Scaling Up**
+    Available Now: - Increase batch size - Adjust resource limits
+    Coming Soon: - Distributed execution - Advanced optimization
+    </Steps>
 
 ## Troubleshooting
 
-<Accordion title="Search Not Converging">
-- Check metric definitions
-- Verify search space bounds
-- Adjust optimization parameters
+<Accordion title="Common Issues">
+  - Check if API server is running
+  - Verify port availability
+  - Review error messages in logs
+  - Check configuration syntax
 </Accordion>
 
 <Accordion title="Resource Issues">
-- Reduce parallel trials
-- Optimize evaluation pipeline
-- Check memory usage
+  - Monitor CPU/GPU usage
+  - Check memory availability
+  - Verify disk space
+  - Review network connectivity
 </Accordion>
 
 ## Next Steps
 
-- Learn to [interpret results](/guides/interpret-outcomes)
-- Understand [meta-learning](/research/meta-learning-insights)
-- Explore [case studies](/research/experiment-case-studies)
+<Check>
+  Ready to analyze your results?
+  
+  Available Now:
+  - Basic experiment configuration
+  - Simple metrics tracking
+  
+  Coming Soon:
+  - [Advanced visualization](/guides/visualize-results)
+  - [Result interpretation](/guides/interpret-outcomes)
+  - [Meta-learning insights](/research/meta-learning-insights)
+  
+  Note: Some features mentioned in the documentation are still under development.
+</Check>

@@ -1,188 +1,249 @@
 ---
 title: "Visualizing Results"
-description: "Learn how to use and interpret NeuroMosaic's interactive visualizations"
+description: "Explore and understand your architecture search results"
 ---
 
-# Visualizing Results
+<Note>
+  Learn how to visualize and analyze your neural architecture search results.
+  Most visualization features described here are planned for future releases.
+</Note>
 
-NeuroMosaic provides powerful interactive visualizations to help you understand and explore the architecture search space. This guide explains how to use each visualization type and interpret the results.
+## Interactive Dashboard (Coming Soon)
 
-## 3D Scatter Plot
+<CardGroup cols={2}>
+  <Card title="3D Architecture Space" icon="cube">
+    Coming Soon:
+    - Interactive scatter plot
+    - Performance heatmaps
+    - Cluster visualization
+    - Architecture comparison
+  </Card>
 
-The primary visualization is an interactive 3D scatter plot where each point represents a neural architecture.
+  <Card title="Performance Metrics" icon="chart-line">
+    Available Now:
+    - Basic metrics display
+    - Training curves
+    
+    Coming Soon:
+    - Real-time updates
+    - Custom metric views
+  </Card>
 
-### Basic Navigation
+  <Card title="Search Progress" icon="magnifying-glass-chart">
+    Available Now:
+    - Search status
+    
+    Coming Soon:
+    - Live exploration view
+    - Strategy adaptation
+    - Coverage analysis
+  </Card>
 
-- **Rotate**: Click and drag
-- **Zoom**: Scroll wheel
-- **Pan**: Right-click and drag
-- **Reset View**: Double-click
+  <Card title="Resource Usage" icon="gauge">
+    Available Now:
+    - Basic resource stats
+    
+    Coming Soon:
+    - GPU utilization
+    - Memory tracking
+    - Network usage
+  </Card>
+</CardGroup>
 
-### Interactive Features
+## Visualization Types
+
+<Tabs>
+  <Tab title="Architecture Space">
+    <Steps>
+      1. **Launch Viewer (Coming Soon)**
+         ```python
+         # Coming Soon
+         from neuromosaic.viz import ArchitectureViewer
+         
+         viewer = ArchitectureViewer()
+         viewer.plot_space(results)
+         ```
+
+      2. **Customize View (Coming Soon)**
+         ```python
+         # Coming Soon
+         viewer.configure(
+             color_by="accuracy",
+             size_by="params",
+             cluster_by="structure"
+         )
+         ```
+
+      3. **Export Plot (Coming Soon)**
+         ```python
+         # Coming Soon
+         viewer.export("architecture_space.html")
+         ```
+    </Steps>
+
+  </Tab>
+
+  <Tab title="Performance Analysis">
+    <Steps>
+      1. **Basic Metrics (Available Now)**
+         ```python
+         from neuromosaic.analysis import MetricsAnalyzer
+         
+         analyzer = MetricsAnalyzer()
+         summary = analyzer.get_summary(results)
+         print(summary)
+         ```
+
+      2. **Advanced Analysis (Coming Soon)**
+         ```python
+         # Coming Soon
+         analyzer.plot_pareto_front()
+         analyzer.show_correlations()
+         ```
+
+      3. **Custom Reports (Coming Soon)**
+         ```python
+         # Coming Soon
+         analyzer.generate_report(
+             metrics=["accuracy", "latency"],
+             format="pdf"
+         )
+         ```
+    </Steps>
+
+  </Tab>
+</Tabs>
+
+## Interactive Features (Coming Soon)
+
+<Accordion title="Selection & Filtering">
+  Coming Soon:
+  - Select regions of interest
+  - Filter by metrics
+  - Highlight similar architectures
+  - Save selections
+</Accordion>
+
+<Accordion title="Comparison Tools">
+  Coming Soon:
+  - Side-by-side comparison
+  - Difference highlighting
+  - Performance trade-offs
+  - Structure analysis
+</Accordion>
+
+## Customization Options (Coming Soon)
 
 <CodeGroup>
-```python Hover Information
-# Example hover data format
-{
-    "Architecture": "ResNet-18",
-    "Accuracy": "94.2%",
-    "Parameters": "11.7M",
-    "Training Time": "2.3 hours"
-}
-```
+```python Theme Configuration
+# Coming Soon
+from neuromosaic.viz import ThemeConfig
 
-```python Point Selection
-# Select points by:
-- Click individual points
-- Box select (Shift + click + drag)
-- Lasso select (Alt + click + drag)
-```
+theme = ThemeConfig(
+color_scheme="viridis",
+background="dark",
+font_size=12,
+interactive=True
+)
+
+viewer.apply_theme(theme)
+
+````
+
+```python Layout Settings
+# Coming Soon
+layout = {
+    "plot_size": (800, 600),
+    "legend_position": "right",
+    "toolbar": "hover",
+    "annotations": True
+}
+
+viewer.configure_layout(layout)
+````
 
 </CodeGroup>
 
-### Color Mapping
+## Export & Sharing
 
-Points are colored based on performance metrics:
+<CardGroup cols={2}>
+  <Card title="Basic Export" icon="file-export">
+    Available Now:
+    - CSV data export
+    - Basic plots
+    
+    Coming Soon:
+    - Interactive HTML
+    - High-res images
+  </Card>
 
-- **Blue → Red**: Low to high performance
-- **Opacity**: Confidence/uncertainty
-- **Size**: Can represent secondary metrics
+  <Card title="Reports (Coming Soon)" icon="file-pdf">
+    - PDF reports
+    - Custom templates
+    - Batch export
+    - Automated insights
+  </Card>
 
-## Timeline Plot
+  <Card title="Collaboration (Coming Soon)" icon="share-nodes">
+    - Share visualizations
+    - Team annotations
+    - Version control
+    - Live updates
+  </Card>
 
-The timeline plot shows how metrics evolve during the search process.
-
-### Features
-
-1. **Multiple Metrics**
-
-   - Toggle different metrics on/off
-   - Compare trends across metrics
-   - Hover for exact values
-
-2. **Time Windows**
-   - Zoom to specific time ranges
-   - Pan through history
-   - Reset to full view
-
-## Parallel Coordinates
-
-This plot helps visualize relationships between different architecture parameters and performance metrics.
-
-### Usage Tips
-
-1. **Parameter Ranges**
-
-   - Drag along axes to filter ranges
-   - Double-click axis to reset
-   - Reorder axes by dragging labels
-
-2. **Pattern Analysis**
-   - Look for parallel lines (correlated parameters)
-   - Identify bottlenecks
-   - Find high-performing regions
-
-## Example Workflows
-
-### Finding Optimal Architectures
-
-1. Start with the 3D scatter plot
-2. Identify high-performing clusters
-3. Use parallel coordinates to understand parameters
-4. Check timeline for convergence
-
-```python
-# Example code for extracting top architectures
-top_architectures = filter_points(
-    metric_threshold=0.95,  # Top 5%
-    cluster_size_min=5      # Stable regions
-)
-```
-
-### Comparing Architecture Families
-
-1. Use color coding for architecture types
-2. Analyze clustering patterns
-3. Compare performance distributions
-4. Identify hybrid opportunities
-
-## Customization Options
-
-### Plot Settings
-
-```python
-# Example configuration
-plot_config = {
-    "colormap": "viridis",
-    "point_size": 8,
-    "opacity": 0.8,
-    "axis_labels": True
-}
-```
-
-### Data Filters
-
-- Filter by metric ranges
-- Show/hide architecture families
-- Highlight selected points
-- Focus on time windows
-
-## Exporting Results
-
-### Available Formats
-
-1. **Static Images**
-
-   - PNG for presentations
-   - SVG for publications
-   - High-resolution options
-
-2. **Interactive HTML**
-
-   - Standalone files
-   - Embed in documents
-   - Share with colleagues
-
-3. **Data Export**
-   - CSV for further analysis
-   - JSON for programmatic use
-   - Architecture specifications
+  <Card title="Integration (Coming Soon)" icon="plug">
+    - Jupyter notebooks
+    - Custom dashboards
+    - API access
+    - External tools
+  </Card>
+</CardGroup>
 
 ## Best Practices
 
-1. **Start Broad**
+<Warning>
+  Basic visualization features are available through the command line.
+  Advanced interactive features are under development.
+</Warning>
 
-   - View full search space first
-   - Identify interesting regions
-   - Gradually zoom in
+<Steps>
+  1. **Data Preparation**
+     Available Now:
+     - Clean your results
+     - Format metrics
+     
+     Coming Soon:
+     - Automated preprocessing
+     - Data validation
 
-2. **Use Multiple Views**
+2.  **Visualization Strategy**
+    Available Now:
 
-   - Combine different plot types
-   - Cross-reference findings
-   - Validate patterns
+    - Focus on key metrics
+    - Use appropriate plots
 
-3. **Document Insights**
-   - Save important views
-   - Note significant patterns
-   - Track search progress
+    Coming Soon:
 
-## Troubleshooting
+    - Interactive exploration
+    - Custom views
 
-<Accordion title="Visualization Performance">
-- Reduce point count for smoother interaction
-- Use simpler color schemes
-- Enable hardware acceleration
-</Accordion>
-
-<Accordion title="Data Updates">
-- Check WebSocket connection
-- Verify data pipeline
-- Clear browser cache
-</Accordion>
+3.  **Performance**
+    Available Now: - Basic optimization
+    Coming Soon: - Large dataset handling - Real-time updates - Caching
+    </Steps>
 
 ## Next Steps
 
-- Learn about [running experiments](/guides/run-experiments)
-- Understand [meta-learning](/research/meta-learning-insights)
-- Explore [architecture space](/research/sphere-metaphor)
+<Check>
+  Ready to analyze your results?
+  
+  Available Now:
+  - [Run basic experiments](/guides/run-experiments)
+  - View simple metrics
+  
+  Coming Soon:
+  - [Advanced interpretation](/guides/interpret-outcomes)
+  - [Custom visualizations](/guides/visualize-results)
+  
+  Note: Many visualization features are still under development.
+</Check>

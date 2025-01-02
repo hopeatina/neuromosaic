@@ -5,28 +5,36 @@ description: "Scale your neural architecture search across multiple machines"
 
 <Note>
   NeuroMosaic's distributed computing infrastructure enables large-scale
-  architecture exploration across multiple machines and GPUs.
+  architecture exploration across multiple machines and GPUs. Many features
+  described here are planned for future releases.
 </Note>
 
 ## Architecture
 
 <CardGroup cols={2}>
-  <Card title="Master Node" icon="server">
-    Responsibilities: - Task distribution - Result aggregation - Search
-    coordination - Resource management
+  <Card title="Master Node (Coming Soon)" icon="server">
+    Responsibilities:
+    - Task distribution
+    - Result aggregation
+    - Search coordination
+    - Resource management
   </Card>
 
-  <Card title="Worker Nodes" icon="microchip">
-    Capabilities: - Model training - Architecture evaluation - Performance
-    monitoring - Resource reporting
+  <Card title="Worker Nodes (Coming Soon)" icon="microchip">
+    Capabilities:
+    - Model training
+    - Architecture evaluation
+    - Performance monitoring
+    - Resource reporting
   </Card>
 </CardGroup>
 
-## Setup Guide
+## Setup Guide (Coming Soon)
 
 <Steps>
   1. **Configure Cluster**
      ```python
+     # Coming Soon
      from neuromosaic.distributed import Cluster
      
      cluster = Cluster(
@@ -42,6 +50,7 @@ description: "Scale your neural architecture search across multiple machines"
 2. **Define Resources**
 
    ```python
+   # Coming Soon
    resources = {
        "gpu_type": "nvidia-t4",
        "gpus_per_node": 4,
@@ -52,27 +61,32 @@ description: "Scale your neural architecture search across multiple machines"
    ```
 
 3. **Launch Cluster**
-   `python
-  cluster.launch(
-      resources=resources,
-      auto_scale=True,
-      min_nodes=1,
-      max_nodes=10
-  )
-  `
+   ```python
+   # Coming Soon
+   cluster.launch(
+       resources=resources,
+       auto_scale=True,
+       min_nodes=1,
+       max_nodes=10
+   )
+   ```
    </Steps>
 
-## Resource Management
+## Resource Management (Coming Soon)
 
 <Tabs>
   <Tab title="GPU Management">
     <CardGroup cols={2}>
       <Card title="Allocation" icon="memory">
-        - Dynamic GPU assignment - Memory monitoring - Multi-GPU training
+        - Dynamic GPU assignment
+        - Memory monitoring
+        - Multi-GPU training
       </Card>
 
       <Card title="Optimization" icon="gauge">
-        - Batch size tuning - Memory efficiency - Pipeline parallelism
+        - Batch size tuning
+        - Memory efficiency
+        - Pipeline parallelism
       </Card>
     </CardGroup>
 
@@ -81,21 +95,26 @@ description: "Scale your neural architecture search across multiple machines"
   <Tab title="CPU & Memory">
     <CardGroup cols={2}>
       <Card title="Processing" icon="microchip">
-        - Data preprocessing - Result analysis - Background tasks
+        - Data preprocessing
+        - Result analysis
+        - Background tasks
       </Card>
 
       <Card title="Storage" icon="hard-drive">
-        - Model checkpoints - Training data - Results cache
+        - Model checkpoints
+        - Training data
+        - Results cache
       </Card>
     </CardGroup>
 
   </Tab>
 </Tabs>
 
-## Fault Tolerance
+## Fault Tolerance (Coming Soon)
 
 <Warning>
-  Distributed systems must handle various failure scenarios gracefully.
+  Distributed systems must handle various failure scenarios gracefully. This
+  feature is planned for future releases.
 </Warning>
 
 <Accordion title="Node Failures">
@@ -108,10 +127,11 @@ description: "Scale your neural architecture search across multiple machines"
   Partial failures
 </Accordion>
 
-## Monitoring
+## Monitoring (Coming Soon)
 
 <CodeGroup>
 ```python Cluster Status
+# Coming Soon
 from neuromosaic.monitoring import ClusterMonitor
 
 monitor = ClusterMonitor(cluster)
@@ -124,7 +144,7 @@ print(f"Memory usage: {status.memory_usage}GB")
 ````
 
 ```python Performance Metrics
-# Track distributed training
+# Coming Soon
 metrics = monitor.get_metrics()
 
 print(f"Training throughput: {metrics.samples_per_second}")
@@ -138,35 +158,46 @@ print(f"Resource efficiency: {metrics.resource_utilization}%")
 
 <CardGroup cols={2}>
   <Card title="Performance" icon="bolt">
-    - Optimize batch sizes - Balance workloads - Monitor bottlenecks - Cache
-    results
+    Coming Soon:
+    - Optimize batch sizes
+    - Balance workloads
+    - Monitor bottlenecks
+    - Cache results
   </Card>
 
 {" "}
+
 <Card title="Reliability" icon="shield">
-  - Regular checkpoints - Error handling - State synchronization - Health checks
+  Coming Soon: - Regular checkpoints - Error handling - State synchronization -
+  Health checks
 </Card>
 
 {" "}
+
 <Card title="Scaling" icon="arrow-up-right-dots">
-  - Horizontal scaling - Resource planning - Cost optimization - Load balancing
+  Coming Soon: - Horizontal scaling - Resource planning - Cost optimization -
+  Load balancing
 </Card>
 
   <Card title="Security" icon="lock">
-    - Network isolation - Access control - Data encryption - Audit logging
+    Coming Soon:
+    - Network isolation
+    - Access control
+    - Data encryption
+    - Audit logging
   </Card>
 </CardGroup>
 
 ## Troubleshooting
 
 <Accordion title="Common Issues">
-  - Node connection failures - Resource exhaustion - Training stalls -
-  Synchronization problems
+  Coming Soon: - Node connection failures - Resource exhaustion - Training
+  stalls - Synchronization problems
 </Accordion>
 
 <Accordion title="Solutions">
-  - Check network connectivity - Monitor resource usage - Review error logs -
-  Verify configurations
+  Coming Soon: - Check network connectivity - Monitor resource usage - Review
+  error logs - Verify configurations
 </Accordion>
 
 ## Next Steps
@@ -175,5 +206,6 @@ print(f"Resource efficiency: {metrics.resource_utilization}%")
   Ready to scale your experiments? - Configure your [data
   pipeline](/platform/data-pipeline) - Set up [security
   measures](/platform/security) - Run [distributed
-  experiments](/guides/run-experiments)
-</Check>{" "}
+  experiments](/guides/run-experiments) Note: Some features mentioned in the
+  linked sections are still under development.
+</Check>

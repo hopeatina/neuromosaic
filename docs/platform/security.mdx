@@ -5,39 +5,48 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
 
 <Note>
   Security is a critical aspect of NeuroMosaic, ensuring the protection of your
-  models, data, and research.
+  models, data, and research. Most advanced security features described here are
+  planned for future releases.
 </Note>
 
 ## Security Overview
 
 <CardGroup cols={2}>
-  <Card title="Authentication" icon="key">
-    - User authentication - API key management - Token validation - Session
-    control
+  <Card title="Authentication (Coming Soon)" icon="key">
+    - User authentication
+    - API key management
+    - Token validation
+    - Session control
   </Card>
 
 {" "}
-<Card title="Authorization" icon="lock">
+
+<Card title="Authorization (Coming Soon)" icon="lock">
   - Role-based access - Permission management - Resource policies - Access
   control
 </Card>
 
 {" "}
+
 <Card title="Data Protection" icon="shield">
-  - Encryption at rest - Secure transmission - Data isolation - Privacy controls
+  Available Now: - Secure transmission Coming Soon: - Encryption at rest - Data
+  isolation - Privacy controls
 </Card>
 
-  <Card title="Monitoring" icon="eye">
-    - Audit logging - Activity tracking - Threat detection - Compliance
-    reporting
+  <Card title="Monitoring (Coming Soon)" icon="eye">
+    - Audit logging
+    - Activity tracking
+    - Threat detection
+    - Compliance reporting
   </Card>
 </CardGroup>
 
-## Authentication Setup
+## Authentication Setup (Coming Soon)
 
 <Steps>
   1. **Configure Authentication**
      ```python
+     # Coming Soon
      from neuromosaic.security import AuthConfig
      
      auth_config = AuthConfig(
@@ -51,6 +60,7 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
 2. **User Management**
 
    ```python
+   # Coming Soon
    # Create user
    user = auth.create_user(
        email="researcher@org.com",
@@ -67,22 +77,24 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
    ```
 
 3. **Token Validation**
-   `python
+   ```python
+   # Coming Soon
    # Validate request
    @require_auth
    def protected_endpoint():
-   token = get_current_token()
-   user = validate_token(token)
-   check_permissions(user, required=["execute"])
-   `
+       token = get_current_token()
+       user = validate_token(token)
+       check_permissions(user, required=["execute"])
+   ```
    </Steps>
 
-## Access Control
+## Access Control (Coming Soon)
 
 <Tabs>
   <Tab title="Role-Based Access">
     <CardGroup cols={2}>
       <Card title="Roles" icon="users">
+        Planned roles:
         - Administrator
         - Researcher
         - Viewer
@@ -90,6 +102,7 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
       </Card>
       
       <Card title="Permissions" icon="key">
+        Planned permissions:
         - Read access
         - Execute experiments
         - Modify settings
@@ -101,6 +114,7 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
   <Tab title="Resource Policies">
     <CodeGroup>
     ```yaml Policy Example
+    # Coming Soon
     # resource_policy.yaml
     resources:
       experiments:
@@ -118,6 +132,7 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
     ```
 
     ```python Policy Enforcement
+    # Coming Soon
     from neuromosaic.security import PolicyEnforcer
 
     enforcer = PolicyEnforcer("resource_policy.yaml")
@@ -140,15 +155,14 @@ description: "Secure your NeuroMosaic deployment and protect sensitive data"
 ## Data Protection
 
 <Warning>
-  Proper data protection is essential for maintaining the confidentiality and
-  integrity of your research.
+  Basic security measures are available now. Advanced data protection features
+  are planned for future releases.
 </Warning>
 
-<Accordion title="Encryption">
+<Accordion title="Encryption (Coming Soon)">
 ```python
+# Coming Soon
 from neuromosaic.security import Encryption
-
-# Configure encryption
 
 encryption = Encryption(
 key_management="aws-kms",
@@ -172,9 +186,9 @@ context={"project": "research-1"}
 ````
 </Accordion>
 
-<Accordion title="Data Isolation">
+<Accordion title="Data Isolation (Coming Soon)">
 ```python
-# Configure isolation
+# Coming Soon
 isolation = DataIsolation(
     namespace="project-123",
     storage_policy="encrypted"
@@ -189,17 +203,16 @@ with isolation.scope():
 
 </Accordion>
 
-## Audit & Compliance
+## Audit & Compliance (Coming Soon)
 
 <Info>
-  Comprehensive audit logging helps track system usage and ensure compliance.
+  Comprehensive audit logging and compliance features are under development.
 </Info>
 
 <CodeGroup>
 ```python Audit Logging
+# Coming Soon
 from neuromosaic.security import AuditLogger
-
-# Initialize logger
 
 audit = AuditLogger(
 storage="elasticsearch",
@@ -221,6 +234,7 @@ details={
 ````
 
 ```python Compliance Reports
+# Coming Soon
 # Generate compliance report
 report = audit.generate_report(
     period="last-30-days",
@@ -242,35 +256,46 @@ audit.export_logs(
 
 <CardGroup cols={2}>
   <Card title="Authentication" icon="key">
-    - Use strong passwords - Rotate API keys - Enable 2FA - Limit session
-    duration
+    Available Now:
+    - Use strong passwords
+    
+    Coming Soon:
+    - Rotate API keys
+    - Enable 2FA
+    - Limit session duration
   </Card>
 
 {" "}
+
 <Card title="Authorization" icon="lock">
-  - Principle of least privilege - Regular access review - Role separation -
-  Clear policies
+  Coming Soon: - Principle of least privilege - Regular access review - Role
+  separation - Clear policies
 </Card>
 
 {" "}
+
 <Card title="Data Security" icon="shield">
-  - Encrypt sensitive data - Secure backups - Data classification - Access
-  logging
+  Available Now: - Secure transmission Coming Soon: - Encrypt sensitive data -
+  Secure backups - Data classification - Access logging
 </Card>
 
   <Card title="Monitoring" icon="eye">
-    - Regular audits - Alert configuration - Activity review - Incident response
+    Coming Soon:
+    - Regular audits
+    - Alert configuration
+    - Activity review
+    - Incident response
   </Card>
 </CardGroup>
 
 ## Troubleshooting
 
-<Accordion title="Authentication Issues">
+<Accordion title="Authentication Issues (Coming Soon)">
   - Check token expiration - Verify credentials - Review permissions - Check API
   key status
 </Accordion>
 
-<Accordion title="Security Alerts">
+<Accordion title="Security Alerts (Coming Soon)">
   - Investigate unusual activity - Check access patterns - Review audit logs -
   Update policies
 </Accordion>
@@ -281,5 +306,6 @@ audit.export_logs(
   Ready to secure your deployment? - Review [distributed
   computing](/platform/distributed-computing) security - Configure [data
   pipeline](/platform/data-pipeline) protection - Start [running
-  experiments](/guides/run-experiments) securely
-</Check>{" "}
+  experiments](/guides/run-experiments) securely Note: Most security features
+  mentioned here and in linked sections are under active development.
+</Check>
