@@ -37,25 +37,31 @@
       "url": "platform"
     },
     {
-      "name": "API Reference",
-      "icon": "code",
+      "name": "Guides",
+      "icon": "book",
       "color": "#7c71d8",
-      "url": "api"
+      "url": "guides"
     },
     {
       "name": "Research",
       "icon": "flask",
       "color": "#2e2066",
       "url": "research"
+    },
+    {
+      "name": "Developer",
+      "icon": "code",
+      "color": "#4a3990",
+      "url": "developer"
     }
   ],
   "navigation": [
     {
-      "group": "Getting Started",
-      "pages": ["quickstart", "introduction"]
+      "group": "Introduction",
+      "pages": ["index", "quickstart"]
     },
     {
-      "group": "Platform Architecture",
+      "group": "Platform",
       "pages": [
         "platform/overview",
         "platform/distributed-computing",
@@ -64,12 +70,12 @@
       ]
     },
     {
-      "group": "API Reference",
+      "group": "User Guides",
       "pages": [
-        "api/overview",
-        "api/authentication",
-        "api/endpoints",
-        "api/error-handling"
+        "guides/getting-started",
+        "guides/run-experiments",
+        "guides/visualize-results",
+        "guides/interpret-outcomes"
       ]
     },
     {
@@ -87,6 +93,10 @@
         "developer/llm-providers",
         "developer/fastapi-integration"
       ]
+    },
+    {
+      "group": "Frontend",
+      "pages": ["frontend"]
     }
   ],
   "footerSocials": {
@@ -100,14 +110,5 @@
   },
   "search": {
     "prompt": "Search NeuroMosaic docs..."
-  },
-  "api": {
-    "baseUrl": "https://api.neuromosaic.org",
-    "auth": {
-      "method": "bearer"
-    },
-    "playground": {
-      "mode": "show"
-    }
   }
 }

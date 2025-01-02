@@ -1,0 +1,179 @@
+---
+title: "Distributed Computing"
+description: "Scale your neural architecture search across multiple machines"
+---
+
+<Note>
+  NeuroMosaic's distributed computing infrastructure enables large-scale
+  architecture exploration across multiple machines and GPUs.
+</Note>
+
+## Architecture
+
+<CardGroup cols={2}>
+  <Card title="Master Node" icon="server">
+    Responsibilities: - Task distribution - Result aggregation - Search
+    coordination - Resource management
+  </Card>
+
+  <Card title="Worker Nodes" icon="microchip">
+    Capabilities: - Model training - Architecture evaluation - Performance
+    monitoring - Resource reporting
+  </Card>
+</CardGroup>
+
+## Setup Guide
+
+<Steps>
+  1. **Configure Cluster**
+     ```python
+     from neuromosaic.distributed import Cluster
+     
+     cluster = Cluster(
+         master_node="master.example.com",
+         worker_nodes=[
+             "worker1.example.com",
+             "worker2.example.com"
+         ],
+         ssh_config="~/.ssh/config"
+     )
+     ```
+
+2. **Define Resources**
+
+   ```python
+   resources = {
+       "gpu_type": "nvidia-t4",
+       "gpus_per_node": 4,
+       "cpu_cores": 32,
+       "memory": "64GB",
+       "storage": "1TB"
+   }
+   ```
+
+3. **Launch Cluster**
+   `python
+  cluster.launch(
+      resources=resources,
+      auto_scale=True,
+      min_nodes=1,
+      max_nodes=10
+  )
+  `
+   </Steps>
+
+## Resource Management
+
+<Tabs>
+  <Tab title="GPU Management">
+    <CardGroup cols={2}>
+      <Card title="Allocation" icon="memory">
+        - Dynamic GPU assignment - Memory monitoring - Multi-GPU training
+      </Card>
+
+      <Card title="Optimization" icon="gauge">
+        - Batch size tuning - Memory efficiency - Pipeline parallelism
+      </Card>
+    </CardGroup>
+
+  </Tab>
+
+  <Tab title="CPU & Memory">
+    <CardGroup cols={2}>
+      <Card title="Processing" icon="microchip">
+        - Data preprocessing - Result analysis - Background tasks
+      </Card>
+
+      <Card title="Storage" icon="hard-drive">
+        - Model checkpoints - Training data - Results cache
+      </Card>
+    </CardGroup>
+
+  </Tab>
+</Tabs>
+
+## Fault Tolerance
+
+<Warning>
+  Distributed systems must handle various failure scenarios gracefully.
+</Warning>
+
+<Accordion title="Node Failures">
+  Automatic handling of: - Worker disconnections - Task reassignment - State
+  recovery - Result preservation
+</Accordion>
+
+<Accordion title="Network Issues">
+  Robust against: - Connection drops - Latency spikes - Bandwidth limitations -
+  Partial failures
+</Accordion>
+
+## Monitoring
+
+<CodeGroup>
+```python Cluster Status
+from neuromosaic.monitoring import ClusterMonitor
+
+monitor = ClusterMonitor(cluster)
+status = monitor.get_status()
+
+print(f"Active nodes: {status.active_nodes}")
+print(f"GPU utilization: {status.gpu_utilization}%")
+print(f"Memory usage: {status.memory_usage}GB")
+
+````
+
+```python Performance Metrics
+# Track distributed training
+metrics = monitor.get_metrics()
+
+print(f"Training throughput: {metrics.samples_per_second}")
+print(f"Communication overhead: {metrics.network_time}ms")
+print(f"Resource efficiency: {metrics.resource_utilization}%")
+````
+
+</CodeGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Performance" icon="bolt">
+    - Optimize batch sizes - Balance workloads - Monitor bottlenecks - Cache
+    results
+  </Card>
+
+{" "}
+<Card title="Reliability" icon="shield">
+  - Regular checkpoints - Error handling - State synchronization - Health checks
+</Card>
+
+{" "}
+<Card title="Scaling" icon="arrow-up-right-dots">
+  - Horizontal scaling - Resource planning - Cost optimization - Load balancing
+</Card>
+
+  <Card title="Security" icon="lock">
+    - Network isolation - Access control - Data encryption - Audit logging
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Accordion title="Common Issues">
+  - Node connection failures - Resource exhaustion - Training stalls -
+  Synchronization problems
+</Accordion>
+
+<Accordion title="Solutions">
+  - Check network connectivity - Monitor resource usage - Review error logs -
+  Verify configurations
+</Accordion>
+
+## Next Steps
+
+<Check>
+  Ready to scale your experiments? - Configure your [data
+  pipeline](/platform/data-pipeline) - Set up [security
+  measures](/platform/security) - Run [distributed
+  experiments](/guides/run-experiments)
+</Check>{" "}
