@@ -56,7 +56,7 @@ export function FloatingPetal({
     : petalColors[0]; // fallback if not random
 
   // Subtle random rotation and scale (less extreme than before)
-  const initialRotation = randomness ? Math.random() * 60 - 30 : 0; // -30 to +30 deg
+  const initialRotation = randomness ? Math.random() * 360 : 0; // Full 360 rotation
   const scaleVariation = randomness ? 0.95 + Math.random() * 0.1 : 1; // 0.95 to 1.05
   const moveRange = randomness ? Math.random() * 30 - 15 : 0; // -15 to +15 px
 

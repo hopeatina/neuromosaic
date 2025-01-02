@@ -21,6 +21,7 @@ export const Hero: FC<HeroProps> = ({ onWaitlistClick }) => {
         isolate 
         min-h-[calc(100vh-4rem)] 
         overflow-hidden 
+        bg-gradient-to-b from-black via-background-dark to-primary-ultralight
         /* No flex here at the top level to avoid pushing the canvas */
       "
     >
@@ -42,7 +43,7 @@ export const Hero: FC<HeroProps> = ({ onWaitlistClick }) => {
           inset-0 
           pointer-events-none 
           -z-10 
-          bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.DEFAULT),theme(colors.background.dark))]
+          bg-[radial-gradient(45rem_50rem_at_top,theme(colors.primary.DEFAULT),transparent)]
           opacity-50
         "
       />
@@ -75,7 +76,7 @@ export const Hero: FC<HeroProps> = ({ onWaitlistClick }) => {
               }}
               className="flex justify-center mb-8"
             >
-              <Logo size="lg" />
+              <Logo size="xl" />
             </motion.div>
 
             {/* Headline */}
@@ -105,7 +106,7 @@ export const Hero: FC<HeroProps> = ({ onWaitlistClick }) => {
               <Text
                 variant="body-lg"
                 textColor="white"
-                className="max-w-2xl mx-auto mb-8 opacity-80"
+                className="max-w-2xl mx-auto mb-8 opacity-80 text-center"
               >
                 Join our distributed platform for iterative AI model refinement.
                 Contribute to the future of machine learning through
@@ -144,10 +145,10 @@ export const Hero: FC<HeroProps> = ({ onWaitlistClick }) => {
         </Container>
       </div>
 
-      {/* Wave divider (optional) */}
-      <div className="absolute bottom-0 left-0 right-0 text-background">
+      {/* Wave divider */}
+      <div className="absolute bottom-0 left-0 right-0 text-primary-ultralight">
         <svg
-          className="w-full h-24 fill-current"
+          className="w-full h-24 fill-current opacity-100"
           viewBox="0 0 1440 74"
           preserveAspectRatio="none"
         >

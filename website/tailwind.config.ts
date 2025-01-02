@@ -13,11 +13,15 @@ const config: Config = {
           DEFAULT: '#2e2066', // Deep Purple
           hover: '#3a2980',
           light: '#4a3990',
+          ultralight: '#efeeff', // New ultralight purple
+          faded: '#f5f3ff', // New faded purple
         },
         accent: {
           DEFAULT: '#bf3abb', // Vibrant Pink
           hover: '#d042cc',
           light: '#d66ed2',
+          ultralight: '#fdf1ff', // New ultralight pink
+          faded: '#fcf5fe', // New faded pink
         },
         background: {
           dark: '#0c0c1c', // Midnight Blue
@@ -29,6 +33,8 @@ const config: Config = {
           DEFAULT: '#7c71d8', // Soft Lavender
           light: '#9a91e6',
           dark: '#6258c4',
+          ultralight: '#f3f1ff', // New ultralight lavender
+          faded: '#f8f7ff', // New faded lavender
         },
         neutral: {
           100: '#f4f4f4',

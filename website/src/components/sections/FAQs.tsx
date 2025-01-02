@@ -161,7 +161,7 @@ const faqs = [
 
 export const FAQs: FC = () => {
   return (
-    <section className="w-full py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
+    <section className="w-full py-16 md:py-24 bg-secondary-faded">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
           <motion.div

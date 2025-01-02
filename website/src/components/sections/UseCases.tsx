@@ -52,7 +52,7 @@ const useCases = [
 
 export const UseCases: FC = () => {
   return (
-    <section className="w-full py-16 md:py-24 bg-gradient-to-b from-white to-gray-50">
+    <section className="w-full py-16 md:py-24 bg-primary-faded">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
           <motion.div
